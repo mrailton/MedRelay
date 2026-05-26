@@ -36,7 +36,7 @@ omit = [
     "*/conftest.py",
     "*/.venv/*",
     "*/venv/*",
-    "app/schedule.py",  # Schedule configuration file - no logic to test
+    "app/cli.py",       # Interactive Typer CLI — tested manually
 ]
 
 [tool.coverage.report]

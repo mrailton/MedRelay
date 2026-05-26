@@ -1,11 +1,19 @@
 import os
+from collections.abc import Generator
+
+# Must happen before any app imports
+os.environ["APP_ENV"] = "testing"
+os.environ["DATABASE_URL"] = "sqlite://"
+os.environ["SECRET_KEY"] = "test-secret-key"
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from passlib.context import CryptContext
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app import security as _security
 from app.config import get_settings
 from app.db import models  # noqa: F401
 from app.db.base import Base
@@ -14,14 +22,13 @@ from app.main import app
 from app.repositories.session import get_db
 from tests.factories import create_user
 
-os.environ["APP_ENV"] = "testing"
-os.environ["DATABASE_URL"] = "sqlite://"
-os.environ["SECRET_KEY"] = "test-secret-key"
+# Use plaintext passwords in tests — bcrypt with 12 rounds is 200ms+ per hash
+_security.pwd_context = CryptContext(schemes=["plaintext"])
 
 get_settings.cache_clear()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def db_engine():
     engine = create_engine(
         "sqlite://",
@@ -42,11 +49,21 @@ def db_session(db_engine):
     session.close()
 
 
+@pytest.fixture(autouse=True)
+def _clean_db(db_engine):
+    yield
+    with db_engine.connect() as conn:
+        conn.execute(text("PRAGMA foreign_keys = OFF"))
+        for table in Base.metadata.sorted_tables:
+            conn.execute(table.delete())
+        conn.commit()
+
+
 @pytest.fixture
 def client(db_engine, db_session):
     Session = sessionmaker(bind=db_engine)
 
-    def override_get_db():
+    def override_get_db() -> Generator[Session]:
         session = Session()
         try:
             yield session

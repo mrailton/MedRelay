@@ -1,3 +1,5 @@
+import re
+
 from tests.factories import create_event, create_user
 
 
@@ -10,11 +12,20 @@ def test_dashboard_requires_auth(client):
 def test_dashboard_ok(client, db_session):
     user = create_user(db_session)
     create_event(db_session)
-    login_page = client.get("/login")
-    import re
-
-    csrf = re.search(r'name="csrf_token" value="([^"]+)"', login_page.text).group(1)
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
     client.post("/login", data={"email": user.email, "password": "password", "csrf_token": csrf})
     response = client.get("/")
     assert response.status_code == 200
     assert "Dashboard" in response.text
+
+
+def test_dashboard_shows_events(client, db_session):
+    user = create_user(db_session)
+    create_event(db_session, name="Event A")
+    create_event(db_session, name="Event B")
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    client.post("/login", data={"email": user.email, "password": "password", "csrf_token": csrf})
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "Event A" in response.text
+    assert "Event B" in response.text
