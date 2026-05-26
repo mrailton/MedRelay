@@ -1,0 +1,11 @@
+<tr class="hover">
+    <td><a href="{{ url_for('resources.show', resource_id=resource.id) }}" class="link link-hover">{{ resource.name }}</a></td>
+    <td>{{ resource.resource_type }}</td>
+    <td>{% set status = resource.status %}{% include "components/shared/status_badge.html" %}</td>
+    <td>
+        {% if resource.staff %}
+        {% for s in resource.staff %}<span class="badge badge-ghost badge-sm">{{ s.full_name }}</span>{% endfor %}
+        {% else %}<span class="text-base-content/40 text-sm">No staff</span>{% endif %}
+    </td>
+    <td><a href="{{ url_for('resources.show', resource_id=resource.id) }}" class="btn btn-ghost btn-xs">View</a></td>
+</tr>

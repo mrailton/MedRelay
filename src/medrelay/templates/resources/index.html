@@ -1,0 +1,6 @@
+{% extends "layouts/app.html" %}
+{% block title %}Resources{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Resources — {{ event.name }}</h1>
+{% include "components/resources/table.html" %}
+{% endblock %}

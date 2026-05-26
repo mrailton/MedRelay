@@ -1,0 +1,15 @@
+<div class="drawer-side z-40">
+    <label for="main-drawer" class="drawer-overlay"></label>
+    <aside class="bg-base-100 min-h-full w-64 p-4 flex flex-col gap-2">
+        <div class="text-xl font-bold mb-4">MedRelay</div>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-ghost justify-start {% if route_is(request, 'dashboard') %}btn-active{% endif %}">Dashboard</a>
+        <a href="{{ url_for('events.index') }}" class="btn btn-ghost justify-start {% if route_is(request, 'events') %}btn-active{% endif %}">Events</a>
+        <a href="{{ url_for('staff.index') }}" class="btn btn-ghost justify-start {% if route_is(request, 'staff') %}btn-active{% endif %}">Staff</a>
+        {% if can(user, 'viewAny', 'user') %}
+        <div class="divider my-2"></div>
+        <span class="text-xs font-semibold opacity-60 px-4">Administration</span>
+        <a href="{{ url_for('admin.users.index') }}" class="btn btn-ghost justify-start">Users</a>
+        <a href="{{ url_for('admin.audit-logs.index') }}" class="btn btn-ghost justify-start">Audit Logs</a>
+        {% endif %}
+    </aside>
+</div>

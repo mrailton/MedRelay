@@ -1,0 +1,81 @@
+import secrets
+from collections.abc import Generator
+from typing import Annotated
+
+from fastapi import Depends, HTTPException, Request, status
+
+
+class LoginRequired(Exception):
+    pass
+from sqlalchemy.orm import Session
+
+from medrelay.db.models.user import User
+from medrelay.db.session import get_db
+from medrelay.enums import UserRole
+
+DbSession = Annotated[Session, Depends(get_db)]
+
+
+def get_session_user(request: Request, db: Session = Depends(get_db)) -> User | None:
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return None
+    return db.get(User, user_id)
+
+
+def require_auth(user: User | None = Depends(get_session_user)) -> User:
+    if user is None:
+        raise LoginRequired()
+    return user
+
+
+def require_guest(user: User | None = Depends(get_session_user)) -> None:
+    if user is not None:
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER,
+            headers={"Location": "/"},
+        )
+
+
+def require_admin(user: User = Depends(require_auth)) -> User:
+    if not user.is_admin():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    return user
+
+
+def require_controller(user: User = Depends(require_auth)) -> User:
+    if user.user_role == UserRole.READ_ONLY:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    return user
+
+
+CurrentUser = Annotated[User, Depends(require_auth)]
+ControllerUser = Annotated[User, Depends(require_controller)]
+AdminUser = Annotated[User, Depends(require_admin)]
+
+
+def get_csrf_token(request: Request) -> str:
+    token = request.session.get("csrf_token")
+    if not token:
+        token = secrets.token_urlsafe(32)
+        request.session["csrf_token"] = token
+    return token
+
+
+def validate_csrf(request: Request) -> None:
+    session_token = request.session.get("csrf_token")
+    form_token = request.headers.get("x-csrf-token")
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return
+    if not form_token and hasattr(request, "_form"):
+        pass
+    body_token = None
+    if request.method in ("POST", "PUT", "DELETE"):
+        # validated in route via Form
+        return
+
+
+def verify_csrf(request: Request, token: str | None) -> None:
+    session_token = request.session.get("csrf_token")
+    if not session_token or not token or token != session_token:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token mismatch")

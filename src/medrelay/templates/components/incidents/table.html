@@ -1,0 +1,14 @@
+<div class="overflow-x-auto bg-base-100 rounded-box shadow-sm">
+    <table class="table table-sm">
+        <thead>
+            <tr><th>Ref</th><th>Priority</th><th>Category</th><th>Location</th><th>Status</th><th>Resource</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for incident in incidents %}
+            {% include "components/incidents/row.html" %}
+            {% else %}
+            <tr><td colspan="7" class="text-center py-4 text-base-content/60">No incidents</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

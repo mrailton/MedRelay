@@ -1,0 +1,16 @@
+{% extends "layouts/app.html" %}
+{% block title %}{{ event.name }}{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-2">{{ event.name }}</h1>
+<p class="text-base-content/60 mb-6">{{ event.location }}</p>
+<div class="flex gap-2 mb-6">
+    <a href="{{ url_for('events.incidents.index', event_id=event.id) }}" class="btn btn-outline">Incidents</a>
+    <a href="{{ url_for('events.resources.index', event_id=event.id) }}" class="btn btn-outline">Resources</a>
+    <a href="{{ url_for('events.edit', event_id=event.id) }}" class="btn btn-ghost">Edit</a>
+</div>
+<div class="card bg-base-100 shadow-sm"><div class="card-body">
+    <p><strong>Start:</strong> {{ event.start_time }}</p>
+    <p><strong>Active:</strong> {{ event.is_active }}</p>
+    {% if event.notes %}<p><strong>Notes:</strong> {{ event.notes }}</p>{% endif %}
+</div></div>
+{% endblock %}

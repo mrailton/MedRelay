@@ -1,0 +1,19 @@
+{% extends "layouts/app.html" %}
+{% block title %}Create User{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Create User</h1>
+<form method="POST" action="{{ url_for('admin.users.store') }}" class="card bg-base-100 max-w-lg shadow-sm">
+    <div class="card-body space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="text" name="name" class="input input-bordered w-full" required />
+        <input type="email" name="email" class="input input-bordered w-full" required />
+        {% if errors.get('email') %}<p class="text-error text-sm">{{ errors.email }}</p>{% endif %}
+        <input type="password" name="password" class="input input-bordered w-full" required />
+        <input type="password" name="password_confirmation" class="input input-bordered w-full" required />
+        <select name="role" class="select select-bordered w-full">
+            {% for r in UserRole %}<option value="{{ r.value }}">{{ r.label() }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Create</button>
+    </div>
+</form>
+{% endblock %}

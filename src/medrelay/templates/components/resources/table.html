@@ -1,0 +1,12 @@
+<div class="overflow-x-auto bg-base-100 rounded-box shadow-sm">
+    <table class="table table-sm">
+        <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Staff</th><th>Actions</th></tr></thead>
+        <tbody>
+            {% for resource in resources %}
+            {% include "components/resources/row.html" %}
+            {% else %}
+            <tr><td colspan="5" class="text-center py-4 text-base-content/60">No resources</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

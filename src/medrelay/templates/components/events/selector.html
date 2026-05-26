@@ -1,0 +1,9 @@
+<form method="POST" action="{{ url_for('dashboard') }}" class="flex items-center gap-2" id="event-selector-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="text-sm font-medium">Event:</label>
+    <select name="selected_event_id" class="select select-bordered select-sm" onchange="this.form.submit()">
+        {% for event in active_events %}
+        <option value="{{ event.id }}" {% if selected_event and selected_event.id == event.id %}selected{% endif %}>{{ event.name }}</option>
+        {% endfor %}
+    </select>
+</form>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>MedRelay CAD - {% block title %}Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600">
+    <link rel="stylesheet" href="/static/assets/app.css">
+    <script type="module" src="/static/assets/app.js"></script>
+    {% block scripts %}{% endblock %}
+</head>
+<body class="min-h-screen bg-base-200">
+    <div class="drawer lg:drawer-open">
+        <input id="main-drawer" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-content flex flex-col">
+            {% if user %}
+            {% include "components/layout/nav.html" %}
+            {% endif %}
+            <main class="flex-1 p-4 lg:p-6">
+                {% if success %}
+                <div class="alert alert-success mb-4"><span>{{ success }}</span></div>
+                {% endif %}
+                {% if error %}
+                <div class="alert alert-error mb-4"><span>{{ error }}</span></div>
+                {% endif %}
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+        {% if user %}
+        {% include "components/layout/sidebar.html" %}
+        {% endif %}
+    </div>
+    {% block modals %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,18 @@
+<div class="navbar bg-base-100 shadow-sm">
+    <div class="flex-none lg:hidden">
+        <label for="main-drawer" class="btn btn-ghost btn-square">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </label>
+    </div>
+    <div class="flex-1"><span class="text-lg font-semibold">MedRelay CAD</span></div>
+    <div class="flex-none gap-2">
+        {% if user.is_admin() %}<span class="badge badge-warning">ADMIN</span>{% endif %}
+        <span class="text-sm">{{ user.name }}</span>
+        <form method="POST" action="{{ url_for('logout') }}" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,18 @@
+{% if status is string %}
+  {% set value = status %}
+{% else %}
+  {% set value = status.value %}
+{% endif %}
+{% set ns = namespace(label=value) %}
+{% for s in [IncidentStatus, ResourceStatus] %}
+  {% for case in s %}
+    {% if case.value == value %}{% set ns.label = case.label() %}{% endif %}
+  {% endfor %}
+{% endfor %}
+{% set classes = {
+    'AVAILABLE': 'badge-success', 'NEW': 'badge-success', 'COMPLETE': 'badge-success',
+    'ASSIGNED': 'badge-info', 'DISPATCHED': 'badge-info', 'EN_ROUTE': 'badge-warning',
+    'ON_SCENE': 'badge-error', 'TRANSPORTING': 'badge-error', 'RETURNING': 'badge-ghost',
+    'OUT_OF_SERVICE': 'badge-neutral', 'CANCELLED': 'badge-neutral'
+}.get(value, 'badge-ghost') %}
+<span class="badge {{ classes }} badge-sm">{{ ns.label }}</span>

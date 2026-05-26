@@ -1,0 +1,25 @@
+{% extends "layouts/app.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center">
+    <div class="card bg-base-100 w-full max-w-sm shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-4">MedRelay CAD</h2>
+            <p class="text-base-content/60 mb-4">Sign in to your account</p>
+            <form method="POST" action="{{ url_for('login') }}" class="space-y-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label class="fieldset-label">Email</label>
+                <input type="email" name="email" value="{{ email or '' }}" class="input input-bordered w-full" required autofocus />
+                {% if errors.get('email') %}<span class="text-error text-sm">{{ errors.email }}</span>{% endif %}
+                <label class="fieldset-label">Password</label>
+                <input type="password" name="password" class="input input-bordered w-full" required />
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="remember" id="remember" class="checkbox checkbox-sm" />
+                    <label for="remember" class="text-sm">Remember me</label>
+                </div>
+                <button type="submit" class="btn btn-primary w-full">Sign In</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+from pathlib import Path
+
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
+
+from medrelay.config import get_settings
+from medrelay.dependencies import LoginRequired
+from medrelay.routes import api_router
+from medrelay.templating import register_route_names, setup_template_globals
+
+settings = get_settings()
+
+app = FastAPI(title=settings.app_name)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.secret_key,
+    max_age=settings.session_lifetime * 60,
+    https_only=settings.session_secure_cookie,
+)
+
+static_dir = Path(__file__).resolve().parent.parent.parent / "static" / "dist"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+setup_template_globals()
+app.include_router(api_router)
+
+
+@app.exception_handler(LoginRequired)
+async def login_required_handler(request: Request, exc: LoginRequired):
+    return RedirectResponse(url="/login", status_code=303)
+
+
+@app.on_event("startup")
+def on_startup():
+    register_route_names(list(app.routes))

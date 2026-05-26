@@ -1,0 +1,17 @@
+<tr class="hover">
+    <td><a href="{{ url_for('incidents.show', incident_id=incident.id) }}" class="link link-hover font-mono text-sm">{{ incident.reference }}</a></td>
+    <td><span class="badge badge-sm {% if incident.priority == 'P1' %}badge-error{% elif incident.priority == 'P2' %}badge-warning{% else %}badge-info{% endif %}">{{ incident.priority }}</span></td>
+    <td>{{ incident.category }}</td>
+    <td class="max-w-48 truncate" title="{{ incident.location }}">{{ incident.location }}</td>
+    <td>{% set status = incident.status %}{% include "components/shared/status_badge.html" %}</td>
+    <td>
+        {% if incident.resources %}
+        <div class="flex flex-wrap gap-1">
+            {% for resource in incident.resources %}
+            <a href="{{ url_for('resources.show', resource_id=resource.id) }}" class="text-sm link link-hover">{{ resource.name }}</a>
+            {% endfor %}
+        </div>
+        {% else %}<span class="text-base-content/40 text-sm">Unassigned</span>{% endif %}
+    </td>
+    <td><a href="{{ url_for('incidents.show', incident_id=incident.id) }}" class="btn btn-ghost btn-xs">View</a></td>
+</tr>

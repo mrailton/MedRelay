@@ -1,0 +1,16 @@
+{% extends "layouts/app.html" %}
+{% block title %}Edit Event{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Edit Event</h1>
+<form method="POST" action="{{ url_for('events.update', event_id=event.id) }}" class="card bg-base-100 shadow-sm max-w-lg">
+    <div class="card-body space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="_method" value="PUT" />
+        <input type="text" name="name" value="{{ event.name }}" class="input input-bordered w-full" required />
+        <input type="text" name="location" value="{{ event.location }}" class="input input-bordered w-full" required />
+        <label class="label cursor-pointer"><span>Active</span><input type="checkbox" name="is_active" class="checkbox" {% if event.is_active %}checked{% endif %} /></label>
+        <textarea name="notes" class="textarea textarea-bordered w-full">{{ event.notes or '' }}</textarea>
+        <button type="submit" class="btn btn-primary">Update</button>
+    </div>
+</form>
+{% endblock %}

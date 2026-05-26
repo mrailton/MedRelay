@@ -1,0 +1,16 @@
+{% extends "layouts/app.html" %}
+{% block title %}Staff{% endblock %}
+{% block content %}
+<div class="flex justify-between mb-6">
+    <h1 class="text-2xl font-bold">Staff</h1>
+    {% if can(user, 'create', 'staff') %}<a href="{{ url_for('staff.create') }}" class="btn btn-primary">Add Staff</a>{% endif %}
+</div>
+<table class="table bg-base-100 shadow-sm">
+    <thead><tr><th>Name</th><th>Level</th></tr></thead>
+    <tbody>
+        {% for s in staff_list %}
+        <tr><td>{{ s.full_name }}</td><td>{{ s.clinical_level }}</td></tr>
+        {% else %}<tr><td colspan="2">No staff</td></tr>{% endfor %}
+    </tbody>
+</table>
+{% endblock %}

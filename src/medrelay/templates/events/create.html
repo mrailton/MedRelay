@@ -1,0 +1,17 @@
+{% extends "layouts/app.html" %}
+{% block title %}Create Event{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Create Event</h1>
+<form method="POST" action="{{ url_for('events.store') }}" class="card bg-base-100 shadow-sm max-w-lg">
+    <div class="card-body space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="text" name="name" class="input input-bordered w-full" placeholder="Name" required />
+        <input type="text" name="location" class="input input-bordered w-full" placeholder="Location" required />
+        <input type="datetime-local" name="start_time" class="input input-bordered w-full" required />
+        <input type="datetime-local" name="end_time" class="input input-bordered w-full" />
+        <label class="label cursor-pointer"><span>Active</span><input type="checkbox" name="is_active" class="checkbox" value="true" /></label>
+        <textarea name="notes" class="textarea textarea-bordered w-full" rows="3"></textarea>
+        <button type="submit" class="btn btn-primary">Create</button>
+    </div>
+</form>
+{% endblock %}
