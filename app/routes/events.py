@@ -1,22 +1,27 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app import policies
-from app.db.models.event import Event
-from app.db.session import get_db
 from app.dependencies import ControllerUser, CurrentUser, verify_csrf
-from app.services.events import create_event, update_event
+from app.repositories.session import get_db
+from app.services.events import create_event, get_event, list_events, update_event
 from app.templating import render
+
+if TYPE_CHECKING:
+    pass
 
 router = APIRouter(prefix="/events", tags=["events"])
 
 
 @router.get("", name="events.index")
 def events_index(request: Request, user: CurrentUser, db: Session = Depends(get_db)):
-    events = db.query(Event).order_by(Event.start_time.desc()).all()
+    events = list_events(db)
     return render(request, "events/index.html", {"events": events}, user=user)
 
 
@@ -46,9 +51,7 @@ def events_store(
         {
             "name": name,
             "location": location,
-            "start_time": datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-            if "T" in start_time
-            else datetime.fromisoformat(start_time),
+            "start_time": datetime.fromisoformat(start_time.replace("Z", "+00:00")) if "T" in start_time else datetime.fromisoformat(start_time),
             "end_time": datetime.fromisoformat(end_time) if end_time else None,
             "is_active": is_active,
             "notes": notes,
@@ -62,7 +65,7 @@ def events_store(
 
 @router.get("/{event_id}", name="events.show")
 def events_show(request: Request, event_id: int, user: CurrentUser, db: Session = Depends(get_db)):
-    event = db.get(Event, event_id)
+    event = get_event(db, event_id)
     if not event:
         return RedirectResponse(url="/events", status_code=303)
     return render(request, "events/show.html", {"event": event}, user=user)
@@ -70,7 +73,7 @@ def events_show(request: Request, event_id: int, user: CurrentUser, db: Session 
 
 @router.get("/{event_id}/edit", name="events.edit")
 def events_edit(request: Request, event_id: int, user: CurrentUser, db: Session = Depends(get_db)):
-    event = db.get(Event, event_id)
+    event = get_event(db, event_id)
     if not event or not policies.can_update_event(user, event):
         return RedirectResponse(url=f"/events/{event_id}", status_code=303)
     return render(request, "events/edit.html", {"event": event}, user=user)
@@ -91,10 +94,10 @@ def events_update(
     csrf_token: str | None = Form(None),
 ):
     verify_csrf(request, csrf_token)
-    event = db.get(Event, event_id)
+    event = get_event(db, event_id)
     if not event:
         return RedirectResponse(url="/events", status_code=303)
-    data = {}
+    data: dict[str, object] = {}
     if name is not None:
         data["name"] = name
     if location is not None:

@@ -1,20 +1,26 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app import policies
-from app.db.models.staff import Staff
-from app.db.session import get_db
 from app.dependencies import ControllerUser, CurrentUser, verify_csrf
-from app.services.staff import create_staff
+from app.repositories.session import get_db
+from app.services.staff import create_staff, list_staff
 from app.templating import render
+
+if TYPE_CHECKING:
+    pass
 
 router = APIRouter(prefix="/staff", tags=["staff"])
 
 
 @router.get("", name="staff.index")
 def staff_index(request: Request, user: CurrentUser, db: Session = Depends(get_db)):
-    staff_list = db.query(Staff).order_by(Staff.last_name, Staff.first_name).all()
+    staff_list = list_staff(db)
     return render(request, "staff/index.html", {"staff_list": staff_list}, user=user)
 
 
@@ -37,7 +43,7 @@ def staff_store(
     csrf_token: str | None = Form(None),
 ):
     verify_csrf(request, csrf_token)
-    staff = create_staff(
+    create_staff(
         db,
         {
             "first_name": first_name,

@@ -1,16 +1,30 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse, Response
-from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
-from app.db.models.event import Event
-from app.db.models.incident import Incident
-from app.db.models.resource import Resource
-from app.db.models.staff import Staff
-from app.db.session import get_db
 from app.dependencies import CurrentUser, verify_csrf
-from app.enums import IncidentStatus, ResourceStatus
+from app.repositories.session import get_db
+from app.services.events import get_event, list_active_events
+from app.services.incidents import (
+    count_active_incidents_by_event,
+    count_incidents_by_event,
+    list_incidents_by_event,
+)
+from app.services.resources import (
+    count_available_resources_by_event,
+    count_deployed_resources_by_event,
+    count_out_of_service_resources_by_event,
+    list_resources_by_event,
+)
+from app.services.staff import list_staff
 from app.templating import render
+
+if TYPE_CHECKING:
+    pass
 
 router = APIRouter(tags=["dashboard"])
 
@@ -31,7 +45,7 @@ def dashboard(
             return Response(status_code=204)
         return RedirectResponse(url="/", status_code=303)
 
-    active_events = db.query(Event).filter(Event.is_active.is_(True)).order_by(Event.name).all()
+    active_events = list_active_events(db)
     selected_event_id = request.session.get("selected_event_id")
     if selected_event_id is None and active_events:
         selected_event_id = active_events[0].id
@@ -40,61 +54,15 @@ def dashboard(
     dashboard_data = None
 
     if selected_event_id is not None:
-        selected_event = db.get(Event, selected_event_id)
+        selected_event = get_event(db, selected_event_id)
         if selected_event:
-            incidents = (
-                db.query(Incident)
-                .filter(Incident.event_id == selected_event.id)
-                .options(joinedload(Incident.resources))
-                .order_by(Incident.created_at.desc())
-                .all()
-            )
-            resources = (
-                db.query(Resource)
-                .filter(Resource.event_id == selected_event.id)
-                .options(joinedload(Resource.staff))
-                .order_by(Resource.name)
-                .all()
-            )
-            total_incidents = db.query(func.count(Incident.id)).filter(
-                Incident.event_id == selected_event.id
-            ).scalar()
-            active_incidents = (
-                db.query(func.count(Incident.id))
-                .filter(
-                    Incident.event_id == selected_event.id,
-                    Incident.status.notin_(
-                        [IncidentStatus.COMPLETE.value, IncidentStatus.CANCELLED.value]
-                    ),
-                )
-                .scalar()
-            )
-            available_resources = (
-                db.query(func.count(Resource.id))
-                .filter(
-                    Resource.event_id == selected_event.id,
-                    Resource.status == ResourceStatus.AVAILABLE.value,
-                )
-                .scalar()
-            )
-            deployed_resources = (
-                db.query(func.count(Resource.id))
-                .filter(
-                    Resource.event_id == selected_event.id,
-                    Resource.status.notin_(
-                        [ResourceStatus.AVAILABLE.value, ResourceStatus.OUT_OF_SERVICE.value]
-                    ),
-                )
-                .scalar()
-            )
-            out_of_service = (
-                db.query(func.count(Resource.id))
-                .filter(
-                    Resource.event_id == selected_event.id,
-                    Resource.status == ResourceStatus.OUT_OF_SERVICE.value,
-                )
-                .scalar()
-            )
+            incidents = list_incidents_by_event(db, selected_event.id)
+            resources = list_resources_by_event(db, selected_event.id)
+            total_incidents = count_incidents_by_event(db, selected_event.id)
+            active_incidents = count_active_incidents_by_event(db, selected_event.id)
+            available_resources = count_available_resources_by_event(db, selected_event.id)
+            deployed_resources = count_deployed_resources_by_event(db, selected_event.id)
+            out_of_service = count_out_of_service_resources_by_event(db, selected_event.id)
             dashboard_data = {
                 "event": selected_event,
                 "incidents": incidents,
@@ -108,7 +76,7 @@ def dashboard(
                 },
             }
 
-    all_staff = db.query(Staff).order_by(Staff.last_name, Staff.first_name).all()
+    all_staff = list_staff(db)
 
     return render(
         request,

@@ -17,7 +17,7 @@ def register_route_names(routes: list) -> None:
     for route in routes:
         name = getattr(route, "name", None)
         path = getattr(route, "path", None)
-        if name and path and "{" not in path or path:
+        if name and path:
             _route_names[name] = path
 
 

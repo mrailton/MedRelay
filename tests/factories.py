@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
 
+from sqlalchemy.orm import Session
+
 from app.db.models.event import Event
 from app.db.models.incident import Incident
 from app.db.models.user import User
 from app.security import hash_password
-from sqlalchemy.orm import Session
 
 
 def create_user(

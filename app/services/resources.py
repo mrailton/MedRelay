@@ -1,20 +1,20 @@
+from __future__ import annotations
+
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
-from app.db.models.event import Event
-from app.db.models.resource import Resource
-from app.db.models.staff import Staff
-from app.db.models.user import User
 from app.enums import ResourceStatus
 from app.realtime.hub import realtime_hub
-from app.serialization import resource_to_dict
-from app.services.audit import write_audit_log
-from app.services.resource_capability import recalculate_resource_capability
+from app.repositories import Event, Resource, Staff, User
+from app.repositories.resource import ResourceRepository
+from app.repositories.staff import StaffRepository
 
 
 def _publish_resource(resource: Resource) -> None:
+    from app.serialization import resource_to_dict
+
     realtime_hub.publish_sync(
         realtime_hub.resource_channel(resource.event_id),
         "resource.updated",
@@ -23,9 +23,14 @@ def _publish_resource(resource: Resource) -> None:
 
 
 def create_resource(
-    db: Session, event: Event, data: dict, user: User, request: Request | None = None
+    db: Session,
+    event: Event,
+    data: dict,
+    user: User,
+    request: Request | None = None,
 ) -> Resource:
-    resource = Resource(
+    repo = ResourceRepository(db)
+    resource = repo.create(
         event_id=event.id,
         name=data["name"],
         resource_type=data["resource_type"],
@@ -36,16 +41,20 @@ def create_resource(
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
-    db.add(resource)
-    db.flush()
 
     staff_ids = data.get("staff_ids") or []
     if staff_ids:
         if not isinstance(staff_ids, list):
             staff_ids = [staff_ids]
-        resource.staff = list(db.query(Staff).filter(Staff.id.in_(staff_ids)).all())
+        staff_repo = StaffRepository(db)
+        resource.staff = staff_repo.list_by_ids(staff_ids)
+        from app.services.resource_capability import recalculate_resource_capability
+
         recalculate_resource_capability(db, resource)
         db.refresh(resource, attribute_names=["staff"])
+
+    from app.serialization import resource_to_dict
+    from app.services.audit import write_audit_log
 
     write_audit_log(
         db,
@@ -67,11 +76,15 @@ def update_resource_status(
     user: User,
     request: Request | None = None,
 ) -> Resource:
+    from app.serialization import resource_to_dict
+
     before = resource_to_dict(resource)
     resource.status = status.value
     resource.updated_at = datetime.now(UTC)
     db.flush()
     db.refresh(resource, attribute_names=["staff"])
+    from app.services.audit import write_audit_log
+
     write_audit_log(
         db,
         action="resource.status.updated",
@@ -95,8 +108,12 @@ def assign_staff_to_resource(
 ) -> Resource:
     if staff not in resource.staff:
         resource.staff.append(staff)
+    from app.services.resource_capability import recalculate_resource_capability
+
     recalculate_resource_capability(db, resource)
     db.refresh(resource, attribute_names=["staff"])
+    from app.services.audit import write_audit_log
+
     write_audit_log(
         db,
         action="resource.staff.assigned",
@@ -119,8 +136,12 @@ def remove_staff_from_resource(
 ) -> Resource:
     if staff in resource.staff:
         resource.staff.remove(staff)
+    from app.services.resource_capability import recalculate_resource_capability
+
     recalculate_resource_capability(db, resource)
     db.refresh(resource, attribute_names=["staff"])
+    from app.services.audit import write_audit_log
+
     write_audit_log(
         db,
         action="resource.staff.removed",
@@ -132,3 +153,31 @@ def remove_staff_from_resource(
     )
     _publish_resource(resource)
     return resource
+
+
+def get_resource(db: Session, resource_id: int) -> Resource | None:
+    return ResourceRepository(db).get(resource_id)
+
+
+def get_resource_with_details(db: Session, resource_id: int) -> Resource | None:
+    return ResourceRepository(db).get_with_event_staff_incidents(resource_id)
+
+
+def list_resources_by_event(db: Session, event_id: int) -> list[Resource]:
+    return ResourceRepository(db).list_by_event(event_id)
+
+
+def count_resources_by_event(db: Session, event_id: int) -> int:
+    return ResourceRepository(db).count_by_event(event_id)
+
+
+def count_available_resources_by_event(db: Session, event_id: int) -> int:
+    return ResourceRepository(db).count_available_by_event(event_id)
+
+
+def count_deployed_resources_by_event(db: Session, event_id: int) -> int:
+    return ResourceRepository(db).count_deployed_by_event(event_id)
+
+
+def count_out_of_service_resources_by_event(db: Session, event_id: int) -> int:
+    return ResourceRepository(db).count_out_of_service_by_event(event_id)

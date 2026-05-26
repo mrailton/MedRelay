@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.models.resource_staff import resource_staff
+
+if TYPE_CHECKING:
+    from app.db.models.resource import Resource
 
 
 class Staff(Base):
@@ -18,9 +24,7 @@ class Staff(Base):
     created_at: Mapped[datetime | None] = mapped_column(nullable=True)
     updated_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
-    resources: Mapped[list[Resource]] = relationship(
-        secondary=resource_staff, back_populates="staff"
-    )
+    resources: Mapped[list[Resource]] = relationship(secondary=resource_staff, back_populates="staff")
 
     @property
     def full_name(self) -> str:

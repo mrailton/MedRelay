@@ -1,7 +1,6 @@
 """Model dict serialization for audit logs and realtime payloads."""
 
-from app.db.models.incident import Incident
-from app.db.models.resource import Resource
+from app.repositories import Incident, Resource
 
 
 def incident_to_dict(incident: Incident) -> dict:

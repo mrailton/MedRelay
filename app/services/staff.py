@@ -1,17 +1,17 @@
+from __future__ import annotations
+
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
-from app.db.models.staff import Staff
-from app.db.models.user import User
-from app.services.audit import write_audit_log
+from app.repositories import Staff, User
+from app.repositories.staff import StaffRepository
 
 
-def create_staff(
-    db: Session, data: dict, user: User, request: Request | None = None
-) -> Staff:
-    staff = Staff(
+def create_staff(db: Session, data: dict, user: User, request: Request | None = None) -> Staff:
+    repo = StaffRepository(db)
+    staff = repo.create(
         first_name=data["first_name"],
         last_name=data["last_name"],
         clinical_level=data["clinical_level"],
@@ -19,8 +19,8 @@ def create_staff(
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
-    db.add(staff)
-    db.flush()
+    from app.services.audit import write_audit_log
+
     write_audit_log(
         db,
         action="staff.created",
@@ -36,3 +36,15 @@ def create_staff(
         request=request,
     )
     return staff
+
+
+def list_staff(db: Session) -> list[Staff]:
+    return StaffRepository(db).list_all()
+
+
+def list_staff_by_last_name(db: Session) -> list[Staff]:
+    return StaffRepository(db).list_all_by_last_name()
+
+
+def get_staff(db: Session, staff_id: int) -> Staff | None:
+    return StaffRepository(db).get(staff_id)

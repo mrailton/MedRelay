@@ -1,9 +1,7 @@
-from app.db.models.event import Event
-from app.db.models.incident import Incident
-from app.db.models.resource import Resource
-from app.db.models.staff import Staff
-from app.db.models.user import User
+from __future__ import annotations
+
 from app.enums import UserRole
+from app.repositories import Event, Incident, Resource, Staff, User
 
 
 def _is_controller_or_admin(user: User) -> bool:

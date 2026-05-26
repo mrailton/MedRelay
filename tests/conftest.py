@@ -6,21 +6,19 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.config import get_settings
+from app.db import models  # noqa: F401
+from app.db.base import Base
+from app.db.session import engine as module_engine
+from app.main import app
+from app.repositories.session import get_db
+from tests.factories import create_user
+
 os.environ["APP_ENV"] = "testing"
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["SECRET_KEY"] = "test-secret-key"
 
-from app.config import get_settings
-
 get_settings.cache_clear()
-
-from app.db import models  # noqa: F401
-from app.db.base import Base
-from app.db.session import engine as module_engine
-from app.db.session import get_db
-from app.main import app
-
-from tests.factories import create_user
 
 
 @pytest.fixture

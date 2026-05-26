@@ -1,16 +1,20 @@
+from __future__ import annotations
+
 import secrets
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
+from sqlalchemy.orm import Session
+
+from app.enums import UserRole
+from app.repositories import User
+from app.repositories.session import get_db
+from app.repositories.user import UserRepository
 
 
 class LoginRequired(Exception):
     pass
-from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.session import get_db
-from app.enums import UserRole
 
 DbSession = Annotated[Session, Depends(get_db)]
 
@@ -19,7 +23,7 @@ def get_session_user(request: Request, db: Session = Depends(get_db)) -> User | 
     user_id = request.session.get("user_id")
     if not user_id:
         return None
-    return db.get(User, user_id)
+    return UserRepository(db).get(user_id)
 
 
 def require_auth(user: User | None = Depends(get_session_user)) -> User:

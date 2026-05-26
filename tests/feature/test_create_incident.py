@@ -25,9 +25,5 @@ def test_create_incident_action_creates_incident_and_audit_log(db_session):
     assert incident.status == "NEW"
     assert incident.event_id == event.id
 
-    log = (
-        db_session.query(AuditLog)
-        .filter_by(action="incident.created", entity_id=str(incident.id))
-        .first()
-    )
+    log = db_session.query(AuditLog).filter_by(action="incident.created", entity_id=str(incident.id)).first()
     assert log is not None

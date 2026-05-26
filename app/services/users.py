@@ -1,17 +1,18 @@
+from __future__ import annotations
+
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
-from app.db.models.user import User
+from app.repositories import User
+from app.repositories.user import UserRepository
 from app.security import hash_password
-from app.services.audit import write_audit_log
 
 
-def create_user(
-    db: Session, data: dict, actor: User, request: Request | None = None
-) -> User:
-    user = User(
+def create_user(db: Session, data: dict, actor: User, request: Request | None = None) -> User:
+    repo = UserRepository(db)
+    user = repo.create(
         name=data["name"],
         email=data["email"],
         password=hash_password(data["password"]),
@@ -19,8 +20,8 @@ def create_user(
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
-    db.add(user)
-    db.flush()
+    from app.services.audit import write_audit_log
+
     write_audit_log(
         db,
         action="user.created",
@@ -31,3 +32,11 @@ def create_user(
         request=request,
     )
     return user
+
+
+def list_users(db: Session) -> list[User]:
+    return UserRepository(db).list_all()
+
+
+def get_user_by_email(db: Session, email: str) -> User | None:
+    return UserRepository(db).get_by_email(email)

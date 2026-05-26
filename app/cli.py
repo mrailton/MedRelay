@@ -4,9 +4,9 @@ import click
 import typer
 from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.session import SessionLocal
 from app.enums import UserRole
+from app.repositories.session import create_session
+from app.repositories.user import UserRepository
 from app.security import hash_password
 
 app = typer.Typer(name="medrelay", help="MedRelay management commands")
@@ -36,18 +36,18 @@ def user_create() -> None:
         typer.echo("Password must be at least 8 characters.", err=True)
         raise typer.Exit(1)
 
-    db: Session = SessionLocal()
+    db: Session = create_session()
     try:
-        if db.query(User).filter(User.email == email).first():
+        repo = UserRepository(db)
+        if repo.get_by_email(email):
             typer.echo("A user with this email already exists.", err=True)
             raise typer.Exit(1)
-        user = User(
+        repo.create(
             name=name,
             email=email,
             password=hash_password(password),
             role=role,
         )
-        db.add(user)
         db.commit()
         typer.echo(f"User '{name}' created successfully with role {role}.")
     finally:

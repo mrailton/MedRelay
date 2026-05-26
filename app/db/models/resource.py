@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -6,6 +9,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.db.models.incident_resource import incident_resource
 from app.db.models.resource_staff import resource_staff
+
+if TYPE_CHECKING:
+    from app.db.models.event import Event
+    from app.db.models.incident import Incident
+    from app.db.models.staff import Staff
 
 
 class Resource(Base):
@@ -25,6 +33,4 @@ class Resource(Base):
 
     event: Mapped[Event] = relationship(back_populates="resources")
     staff: Mapped[list[Staff]] = relationship(secondary=resource_staff, back_populates="resources")
-    incidents: Mapped[list[Incident]] = relationship(
-        secondary=incident_resource, back_populates="resources"
-    )
+    incidents: Mapped[list[Incident]] = relationship(secondary=incident_resource, back_populates="resources")

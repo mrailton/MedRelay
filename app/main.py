@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -12,7 +13,14 @@ from app.templating import register_route_names, setup_template_globals
 
 settings = get_settings()
 
-app = FastAPI(title=settings.app_name)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    register_route_names(list(app.routes))
+    yield
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.secret_key,
@@ -31,8 +39,3 @@ app.include_router(api_router)
 @app.exception_handler(LoginRequired)
 async def login_required_handler(request: Request, exc: LoginRequired):
     return RedirectResponse(url="/login", status_code=303)
-
-
-@app.on_event("startup")
-def on_startup():
-    register_route_names(list(app.routes))

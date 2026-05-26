@@ -4,7 +4,7 @@ from tests.factories import create_event, make_incident
 
 
 def test_incident_channel_name():
-    event = type("E", (), {"id": 5})()
+    type("E", (), {"id": 5})()
     assert realtime_hub.incident_channel(5) == "event.5.incidents"
 
 

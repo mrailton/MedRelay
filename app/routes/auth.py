@@ -1,12 +1,19 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.db.models.user import User
-from app.db.session import get_db
 from app.dependencies import CurrentUser, get_csrf_token, require_guest, verify_csrf
+from app.repositories.session import get_db
 from app.security import verify_password
+from app.services.users import get_user_by_email
 from app.templating import render
+
+if TYPE_CHECKING:
+    pass
 
 router = APIRouter(tags=["auth"])
 
@@ -25,7 +32,7 @@ def login(
         return render(request, "auth/login.html", {"errors": {}})
 
     verify_csrf(request, csrf_token)
-    user = db.query(User).filter(User.email == email).first()
+    user = get_user_by_email(db, email or "")
     if not user or not verify_password(password or "", user.password):
         return render(
             request,

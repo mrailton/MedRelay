@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from sqlalchemy.orm import Session
 
-from app.db.models.resource import Resource
 from app.enums import ClinicalLevel
+from app.repositories import Resource
 
 
 def recalculate_resource_capability(db: Session, resource: Resource) -> None:

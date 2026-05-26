@@ -1,21 +1,27 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.db.models.audit_log import AuditLog
-from app.db.models.user import User
-from app.db.session import get_db
 from app.dependencies import AdminUser, verify_csrf
 from app.enums import UserRole
-from app.services.users import create_user
+from app.repositories.session import get_db
+from app.services.audit import count_audit_logs, list_audit_logs_paginated
+from app.services.users import create_user, get_user_by_email, list_users
 from app.templating import render
+
+if TYPE_CHECKING:
+    pass
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @router.get("/users", name="admin.users.index")
 def admin_users_index(request: Request, user: AdminUser, db: Session = Depends(get_db)):
-    users = db.query(User).order_by(User.name).all()
+    users = list_users(db)
     return render(request, "admin/users/index.html", {"users": users}, user=user)
 
 
@@ -51,7 +57,7 @@ def admin_users_store(
             {"roles": UserRole, "errors": {"password": "Password must be at least 8 characters."}},
             user=user,
         )
-    if db.query(User).filter(User.email == email).first():
+    if get_user_by_email(db, email):
         return render(
             request,
             "admin/users/create.html",
@@ -71,9 +77,8 @@ def admin_audit_logs(
     page: int = 1,
 ):
     per_page = 50
-    query = db.query(AuditLog).order_by(AuditLog.created_at.desc())
-    total = query.count()
-    logs = query.offset((page - 1) * per_page).limit(per_page).all()
+    total = count_audit_logs(db)
+    logs = list_audit_logs_paginated(db, page, per_page)
     return render(
         request,
         "admin/audit_logs/index.html",
