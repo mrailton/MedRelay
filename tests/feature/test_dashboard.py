@@ -1,4 +1,4 @@
-from tests.factories import create_user, create_event
+from tests.factories import create_event, create_user
 
 
 def test_dashboard_requires_auth(client):

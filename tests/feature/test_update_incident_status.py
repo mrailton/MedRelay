@@ -1,6 +1,6 @@
-from medrelay.db.models.resource import Resource
-from medrelay.enums import IncidentStatus, ResourceStatus
-from medrelay.services.incidents import create_incident, update_incident_status
+from app.db.models.resource import Resource
+from app.enums import IncidentStatus, ResourceStatus
+from app.services.incidents import update_incident_status
 from tests.factories import create_event, create_user, make_incident
 
 

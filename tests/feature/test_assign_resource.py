@@ -1,8 +1,9 @@
-from medrelay.enums import IncidentStatus, ResourceStatus
-from medrelay.services.incidents import assign_resource_to_incident
-from tests.factories import create_event, create_user, make_incident
-from medrelay.db.models.resource import Resource
 from datetime import UTC, datetime
+
+from app.db.models.resource import Resource
+from app.enums import IncidentStatus, ResourceStatus
+from app.services.incidents import assign_resource_to_incident
+from tests.factories import create_event, create_user, make_incident
 
 
 def test_assign_resource_syncs_status(db_session):

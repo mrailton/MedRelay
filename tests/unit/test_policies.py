@@ -1,5 +1,5 @@
-from medrelay import policies
-from medrelay.enums import UserRole
+from app import policies
+from app.enums import UserRole
 from tests.factories import create_user
 
 

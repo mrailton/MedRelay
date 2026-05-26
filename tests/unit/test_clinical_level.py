@@ -1,4 +1,4 @@
-from medrelay.enums import ClinicalLevel
+from app.enums import ClinicalLevel
 
 
 def test_clinical_level_labels():

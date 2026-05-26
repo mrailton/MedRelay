@@ -1,5 +1,5 @@
-from medrelay.realtime.hub import realtime_hub
-from medrelay.serialization import incident_to_dict
+from app.realtime.hub import realtime_hub
+from app.serialization import incident_to_dict
 from tests.factories import create_event, make_incident
 
 

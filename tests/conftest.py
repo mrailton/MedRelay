@@ -10,15 +10,17 @@ os.environ["APP_ENV"] = "testing"
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["SECRET_KEY"] = "test-secret-key"
 
-from medrelay.config import get_settings
+from app.config import get_settings
 
 get_settings.cache_clear()
 
-from medrelay.db.base import Base
-from medrelay.db import models  # noqa: F401
-from medrelay.main import app
-from medrelay.db.session import get_db
-from tests.factories import create_user, create_event, make_incident
+from app.db import models  # noqa: F401
+from app.db.base import Base
+from app.db.session import engine as module_engine
+from app.db.session import get_db
+from app.main import app
+
+from tests.factories import create_user
 
 
 @pytest.fixture
@@ -31,6 +33,7 @@ def db_engine():
     Base.metadata.create_all(bind=engine)
     yield engine
     Base.metadata.drop_all(bind=engine)
+    engine.dispose()
 
 
 @pytest.fixture
@@ -66,6 +69,12 @@ def admin_user(db_session):
 @pytest.fixture
 def controller_user(db_session):
     return create_user(db_session, role="CONTROLLER")
+
+
+@pytest.fixture(autouse=True)
+def _dispose_module_engine():
+    yield
+    module_engine.dispose()
 
 
 @pytest.fixture

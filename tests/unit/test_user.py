@@ -1,4 +1,4 @@
-from medrelay.enums import UserRole
+from app.enums import UserRole
 from tests.factories import create_user
 
 

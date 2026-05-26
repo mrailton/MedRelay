@@ -1,12 +1,10 @@
 from datetime import UTC, datetime
 
+from app.db.models.event import Event
+from app.db.models.incident import Incident
+from app.db.models.user import User
+from app.security import hash_password
 from sqlalchemy.orm import Session
-
-from medrelay.db.models.event import Event
-from medrelay.db.models.incident import Incident
-from medrelay.db.models.user import User
-from medrelay.enums import UserRole
-from medrelay.security import hash_password
 
 
 def create_user(

@@ -1,1 +1,0 @@
-"""MedRelay CAD application."""

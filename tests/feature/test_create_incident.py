@@ -1,5 +1,5 @@
-from medrelay.db.models.audit_log import AuditLog
-from medrelay.services.incidents import create_incident
+from app.db.models.audit_log import AuditLog
+from app.services.incidents import create_incident
 from tests.factories import create_event, create_user
 
 

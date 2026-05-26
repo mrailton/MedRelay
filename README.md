@@ -1,6 +1,6 @@
 # MedRelay (Python)
 
-Medical event CAD dispatch system — Python port of MedRelay (Laravel), built with FastAPI, Jinja2, SQLAlchemy, MySQL, and Server-Sent Events for realtime updates.
+Medical event CAD dispatch system, built with FastAPI, Jinja2, SQLAlchemy, MySQL, and Server-Sent Events for realtime updates.
 
 ## Requirements
 
@@ -26,7 +26,7 @@ npm run build
 ## Development
 
 ```bash
-uv run uvicorn medrelay.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn web:app --reload --host 0.0.0.0 --port 8000
 # In another terminal:
 npm run dev
 ```
