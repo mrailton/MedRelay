@@ -42,7 +42,6 @@ def incidents_store(
     user: ControllerUser,
     db: Session = Depends(get_db),
     organisation_id: int = Depends(require_organisation),
-    reference: str = Form(...),
     location: str = Form(...),
     priority: str = Form(...),
     category: str = Form(...),
@@ -57,7 +56,6 @@ def incidents_store(
         db,
         event,
         {
-            "reference": reference,
             "location": location,
             "priority": priority,
             "category": category,

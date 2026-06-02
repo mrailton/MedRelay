@@ -29,10 +29,9 @@
                 <h3 class="font-semibold mb-4">Update Status</h3>
                 <form method="POST" action="{{ url_for('incidents.update-status', incident_id=incident.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <select name="status" class="select select-bordered select-sm w-full mb-2">
+                    <select name="status" onchange="this.form.submit()" class="select select-bordered select-sm w-full mb-2">
                         {% for s in IncidentStatus %}<option value="{{ s.value }}" {% if incident.status == s.value %}selected{% endif %}>{{ s.label() }}</option>{% endfor %}
                     </select>
-                    <button type="submit" class="btn btn-primary btn-sm">Update</button>
                 </form>
             </div></div>
             <div class="card bg-base-100 shadow-sm"><div class="card-body">
@@ -41,26 +40,25 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     {% for r in event_resources %}
                     <label class="flex items-center gap-2 py-1">
-                        <input type="checkbox" name="resource_ids" value="{{ r.id }}" {% if r.id in incident.resources|map(attribute='id')|list %}checked{% endif %} />
+                        <input type="checkbox" name="resource_ids" value="{{ r.id }}" onchange="this.form.submit()" {% if r.id in incident.resources|map(attribute='id')|list %}checked{% endif %} />
                         {{ r.name }}
                     </label>
                     {% endfor %}
-                    <button type="submit" class="btn btn-primary btn-sm mt-2">Assign</button>
                 </form>
             </div></div>
             {% endif %}
             <div class="card bg-base-100 shadow-sm"><div class="card-body">
                 <h3 class="font-semibold mb-4">Notes</h3>
-                {% for note in incident.notes %}
-                <div class="border-b py-2 text-sm"><p>{{ note.content }}</p>
-                <span class="opacity-50">{{ note.user.name if note.user else 'System' }} · {{ note.created_at }}</span></div>
+                {% for note in incident.notes | reverse %}
+                    <div class="border-b py-2 text-sm"><p>{{ note.content }}</p>
+                    <span class="opacity-50">{{ note.user.name if note.user else 'System' }} · {{ note.created_at }}</span></div>
                 {% endfor %}
                 {% if can(user, 'update', 'incident', incident) %}
-                <form method="POST" action="{{ url_for('incidents.notes.store', incident_id=incident.id) }}" class="mt-4">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <textarea name="content" class="textarea textarea-bordered w-full text-sm" rows="2" required></textarea>
-                    <button type="submit" class="btn btn-sm btn-primary mt-2">Add Note</button>
-                </form>
+                    <form method="POST" action="{{ url_for('incidents.notes.store', incident_id=incident.id) }}" class="mt-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <textarea name="content" class="textarea textarea-bordered w-full text-sm" rows="2" required></textarea>
+                        <button type="submit" class="btn btn-sm btn-primary mt-2">Add Note</button>
+                    </form>
                 {% endif %}
             </div></div>
         </div>

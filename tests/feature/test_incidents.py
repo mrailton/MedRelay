@@ -43,7 +43,6 @@ def test_incidents_store(client, db_session, organisation):
     response = client.post(
         f"/events/{event.id}/incidents",
         data={
-            "reference": "INC-001",
             "location": "Somewhere",
             "priority": "P1",
             "category": "medical",
@@ -55,7 +54,7 @@ def test_incidents_store(client, db_session, organisation):
     assert response.status_code == 303
     incident = get_incident(db_session, 1)
     assert incident is not None
-    assert incident.reference == "INC-001"
+    assert incident.reference == f"{event.id}00001"
 
 
 def test_incidents_show(client, db_session, organisation):

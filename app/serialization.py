@@ -34,7 +34,7 @@ def incident_to_dict(incident: Incident) -> dict:
                     else None
                 ),
             }
-            for n in sorted(incident.notes, key=lambda x: x.created_at or "", reverse=True)
+            for n in sorted(incident.notes, key=lambda x: x.created_at.timestamp() if x.created_at else 0, reverse=True)
         ],
     }
 

@@ -44,7 +44,6 @@
     <h3 class="text-lg font-bold mb-4">New Incident</h3>
     <form method="POST" action="{{ url_for('events.incidents.store', event_id=selected_event.id) }}" class="space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input type="text" name="reference" class="input input-bordered w-full" placeholder="Reference" required />
         <input type="text" name="location" class="input input-bordered w-full" placeholder="Location" required />
         <select name="priority" class="select select-bordered w-full" required>
             <option value="P1">P1 - Emergency</option><option value="P2">P2 - Urgent</option><option value="P3">P3 - Routine</option>

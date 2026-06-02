@@ -11,7 +11,6 @@ def test_create_incident_action_creates_incident_and_audit_log(db_session, organ
         db_session,
         event,
         {
-            "reference": "INC-001",
             "location": "Test Location",
             "priority": "P1",
             "category": "medical",
@@ -21,7 +20,7 @@ def test_create_incident_action_creates_incident_and_audit_log(db_session, organ
     )
     db_session.commit()
 
-    assert incident.reference == "INC-001"
+    assert incident.reference == f"{event.id}00001"
     assert incident.status == "NEW"
     assert incident.event_id == event.id
 

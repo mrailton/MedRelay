@@ -51,7 +51,7 @@ def create_incident(
     repo = IncidentRepository(db)
     incident = repo.create(
         event_id=event.id,
-        reference=data["reference"],
+        reference=repo.get_next_reference(event.id),
         location=data["location"],
         priority=data["priority"],
         category=data["category"],
@@ -153,7 +153,6 @@ def assign_resource_to_incident(
     incident.resources.clear()
     if resource_ids:
         incident.resources.extend(resource_repo.get_by_ids(resource_ids))
-    incident.status = IncidentStatus.DISPATCHED.value if resource_ids else IncidentStatus.NEW.value
     incident.updated_at = datetime.now(UTC)
 
     if added_ids:

@@ -2,6 +2,7 @@ from enum import StrEnum
 
 
 class ClinicalLevel(StrEnum):
+    FAR = "FAR"
     EFR = "EFR"
     EMT = "EMT"
     PARAMEDIC = "PARAMEDIC"
@@ -9,6 +10,7 @@ class ClinicalLevel(StrEnum):
 
     def label(self) -> str:
         return {
+            ClinicalLevel.FAR: "FAR",
             ClinicalLevel.EFR: "EFR",
             ClinicalLevel.EMT: "EMT",
             ClinicalLevel.PARAMEDIC: "Paramedic",
@@ -18,8 +20,9 @@ class ClinicalLevel(StrEnum):
     @property
     def rank(self) -> int:
         return {
-            ClinicalLevel.EFR: 1,
-            ClinicalLevel.EMT: 2,
-            ClinicalLevel.PARAMEDIC: 3,
-            ClinicalLevel.ADVANCED_PARAMEDIC: 4,
+            ClinicalLevel.FAR: 1,
+            ClinicalLevel.EFR: 2,
+            ClinicalLevel.EMT: 3,
+            ClinicalLevel.PARAMEDIC: 4,
+            ClinicalLevel.ADVANCED_PARAMEDIC: 5,
         }[self]

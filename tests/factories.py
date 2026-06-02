@@ -73,7 +73,7 @@ def create_event(db: Session, organisation: Organisation, **kwargs) -> Event:
 def make_incident(db: Session, event: Event, **kwargs) -> Incident:
     incident = Incident(
         event_id=event.id,
-        reference=kwargs.get("reference", "INC-001"),
+        reference=kwargs.get("reference", f"{event.id}00001"),
         location=kwargs.get("location", "Loc"),
         priority=kwargs.get("priority", "P1"),
         category=kwargs.get("category", "medical"),

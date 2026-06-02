@@ -15,10 +15,11 @@ def recalculate_resource_capability(db: Session, resource: Resource) -> None:
 
     highest = max(ClinicalLevel(s.clinical_level).rank for s in resource.staff)
     resource.highest_clinical_level = {
-        1: ClinicalLevel.EFR,
-        2: ClinicalLevel.EMT,
-        3: ClinicalLevel.PARAMEDIC,
-        4: ClinicalLevel.ADVANCED_PARAMEDIC,
+        1: ClinicalLevel.FAR,
+        2: ClinicalLevel.EFR,
+        3: ClinicalLevel.EMT,
+        4: ClinicalLevel.PARAMEDIC,
+        5: ClinicalLevel.ADVANCED_PARAMEDIC,
     }[highest].value
     resource.is_deployable = True
     db.flush()
