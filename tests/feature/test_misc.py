@@ -18,7 +18,7 @@ def _login(client, db_session, organisation):
 def test_health_endpoint(client):
     response = client.get("/up")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {"status": "ok", "database": "ok"}
 
 
 def test_login_failure(client, db_session, organisation):

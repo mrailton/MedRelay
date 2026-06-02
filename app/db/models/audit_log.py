@@ -17,6 +17,11 @@ class AuditLog(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organisation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organisations.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     action: Mapped[str] = mapped_column(String(255))
     entity_type: Mapped[str] = mapped_column(String(255))
     entity_id: Mapped[str] = mapped_column(String(255))

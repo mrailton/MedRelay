@@ -11,7 +11,7 @@ from app.schemas.forms.base import CsrfForm
 F = TypeVar("F", bound=CsrfForm)
 
 
-def verified_form(form_dependency: Callable[..., F]) -> Callable[..., F]:
+def verified_form[F: CsrfForm](form_dependency: Callable[..., F]) -> Callable[..., F]:
     """Wrap a form dependency so CSRF is checked before the route body runs."""
 
     def _verified(request: Request, form: F = Depends(form_dependency)) -> F:

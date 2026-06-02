@@ -26,6 +26,7 @@ def test_write_audit_log(db_session):
         action="test.action",
         entity_type="test",
         entity_id="1",
+        organisation_id=org.id,
         after={"key": "value"},
         user=user,
     )
@@ -35,6 +36,7 @@ def test_write_audit_log(db_session):
     assert log.action == "test.action"
     assert log.entity_type == "test"
     assert log.entity_id == "1"
+    assert log.organisation_id == org.id
     assert log.after == {"key": "value"}
 
 
@@ -42,7 +44,14 @@ def test_list_audit_logs_for_entity(db_session):
     org = _make_org(db_session)
     user = create_user(db_session, organisation=org)
     for i in range(3):
-        write_audit_log(db_session, action=f"test.{i}", entity_type="test", entity_id="e1", user=user)
+        write_audit_log(
+            db_session,
+            action=f"test.{i}",
+            entity_type="test",
+            entity_id="e1",
+            organisation_id=org.id,
+            user=user,
+        )
     db_session.commit()
     logs = list_audit_logs_for_entity(db_session, "test", "e1")
     assert len(logs) == 3
@@ -50,23 +59,57 @@ def test_list_audit_logs_for_entity(db_session):
 
 def test_list_audit_logs_paginated(db_session):
     org = _make_org(db_session)
+    other = create_organisation(db_session, code="other")
     user = create_user(db_session, organisation=org)
     for i in range(5):
-        write_audit_log(db_session, action=f"test.{i}", entity_type="test", entity_id=str(i), user=user)
+        write_audit_log(
+            db_session,
+            action=f"test.{i}",
+            entity_type="test",
+            entity_id=str(i),
+            organisation_id=org.id,
+            user=user,
+        )
+    write_audit_log(
+        db_session,
+        action="other.org",
+        entity_type="test",
+        entity_id="x",
+        organisation_id=other.id,
+        user=user,
+    )
     db_session.commit()
-    page1 = list_audit_logs_paginated(db_session, page=1, per_page=2)
+    page1 = list_audit_logs_paginated(db_session, org.id, page=1, per_page=2)
     assert len(page1) == 2
-    page2 = list_audit_logs_paginated(db_session, page=2, per_page=2)
+    page2 = list_audit_logs_paginated(db_session, org.id, page=2, per_page=2)
     assert len(page2) == 2
+    assert len(list_audit_logs_paginated(db_session, other.id, page=1, per_page=10)) == 1
 
 
 def test_count_audit_logs(db_session):
     org = _make_org(db_session)
+    other = create_organisation(db_session, code="other2")
     user = create_user(db_session, organisation=org)
-    assert count_audit_logs(db_session) == 0
-    write_audit_log(db_session, action="test", entity_type="test", entity_id="1", user=user)
+    assert count_audit_logs(db_session, org.id) == 0
+    write_audit_log(
+        db_session,
+        action="test",
+        entity_type="test",
+        entity_id="1",
+        organisation_id=org.id,
+        user=user,
+    )
+    write_audit_log(
+        db_session,
+        action="test",
+        entity_type="test",
+        entity_id="2",
+        organisation_id=other.id,
+        user=user,
+    )
     db_session.commit()
-    assert count_audit_logs(db_session) == 1
+    assert count_audit_logs(db_session, org.id) == 1
+    assert count_audit_logs(db_session, other.id) == 1
 
 
 def test_config_is_testing():
@@ -173,8 +216,15 @@ def test_create_user_service(db_session):
     actor = create_user(db_session, role="ADMIN", organisation=org)
     user = create_user_svc(
         db_session,
-        {"name": "New User", "email": "new@example.com", "password": "secret", "role": "CONTROLLER"},
+        {
+            "name": "New User",
+            "email": "new@example.com",
+            "password": "secret",
+            "role": "CONTROLLER",
+            "organisation_ids": [org.id],
+        },
         actor,
+        organisation_id=org.id,
     )
     db_session.commit()
     assert user.name == "New User"

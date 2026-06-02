@@ -61,10 +61,16 @@ def admin_users_store(
 
 
 @router.get("/audit-logs", name="admin.audit-logs.index")
-def admin_audit_logs(request: Request, user: AdminUser, db: DbSession, page: int = 1):
+def admin_audit_logs(
+    request: Request,
+    user: AdminUser,
+    organisation_id: CurrentOrg,
+    db: DbSession,
+    page: int = 1,
+):
     per_page = 50
-    total = count_audit_logs(db)
-    logs = list_audit_logs_paginated(db, page, per_page)
+    total = count_audit_logs(db, organisation_id)
+    logs = list_audit_logs_paginated(db, organisation_id, page, per_page)
     return render(
         request,
         "admin/audit_logs/index.html",

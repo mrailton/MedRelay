@@ -32,6 +32,7 @@ def create_event(db: Session, data: dict, user: User, request: Request | None = 
         action="event.created",
         entity_type="event",
         entity_id=str(event.id),
+        organisation_id=event.organisation_id,
         after={
             "id": event.id,
             "name": event.name,
@@ -64,6 +65,7 @@ def update_event(db: Session, event: Event, data: dict, user: User, request: Req
         action="event.updated",
         entity_type="event",
         entity_id=str(event.id),
+        organisation_id=event.organisation_id,
         before=before,
         after={
             "id": event.id,

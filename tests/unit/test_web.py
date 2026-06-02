@@ -2,7 +2,6 @@ from unittest.mock import MagicMock
 
 import pytest
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
 
 from app.web.csrf import verified_form
 from app.web.entities import redirect_if_missing

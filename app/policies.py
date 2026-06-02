@@ -81,6 +81,12 @@ def can_create_user(user: User, organisation_id: int | None = None) -> bool:
     return user.is_admin(organisation_id)
 
 
+def can_access_platform(user: User, organisation_id: int | None, default_organisation_id: int | None) -> bool:
+    if organisation_id is None or default_organisation_id is None:
+        return False
+    return organisation_id == default_organisation_id and user.is_admin(default_organisation_id)
+
+
 def can(user: User, action: str, subject: str | None = None, obj=None, *, organisation_id: int | None = None) -> bool:
     """Jinja-friendly policy check mirroring Laravel Gate::authorize patterns."""
     if action == "admin-only":

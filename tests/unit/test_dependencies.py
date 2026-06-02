@@ -96,7 +96,7 @@ def test_require_default_org_admin_no_default_org(client, db_session, organisati
     user = create_user(db_session, role="ADMIN", organisation=organisation)
     csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
     client.post("/login", data={"organisation_code": organisation.code, "email": user.email, "password": "password", "csrf_token": csrf})
-    response = client.get("/admin/organisations", follow_redirects=False)
+    response = client.get("/platform/organisations", follow_redirects=False)
     assert response.status_code == 403
 
 
@@ -105,7 +105,7 @@ def test_require_default_org_admin_success(client, db_session):
     user = create_user(db_session, role="ADMIN", organisation=default_org)
     csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
     client.post("/login", data={"organisation_code": default_org.code, "email": user.email, "password": "password", "csrf_token": csrf})
-    response = client.get("/admin/organisations")
+    response = client.get("/platform/organisations")
     assert response.status_code == 200
 
 

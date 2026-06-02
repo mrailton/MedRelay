@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from app.dependencies import CurrentUser
@@ -22,8 +22,19 @@ async def realtime_events(
         realtime_hub.resource_channel(event_id),
     ]
 
+    queues: list[asyncio.Queue[str]] = []
+    try:
+        for ch in channels:
+            queues.append(await realtime_hub.subscribe(ch))
+    except RuntimeError as exc:
+        for ch, q in zip(channels, queues, strict=False):
+            await realtime_hub.unsubscribe(ch, q)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+
     async def event_generator():
-        queues = [await realtime_hub.subscribe(ch) for ch in channels]
         try:
             yield ": connected\n\n"
             while True:
@@ -33,7 +44,7 @@ async def realtime_events(
                     try:
                         message = await asyncio.wait_for(queue.get(), timeout=30.0)
                         if incident_id is not None and "incident.updated" in message:
-                            data_line = [l for l in message.split("\n") if l.startswith("data: ")]
+                            data_line = [line for line in message.split("\n") if line.startswith("data: ")]
                             if data_line:
                                 payload = json.loads(data_line[0][6:])
                                 inc = payload.get("incident", {})

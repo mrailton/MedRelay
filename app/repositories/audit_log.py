@@ -24,15 +24,22 @@ class AuditLogRepository(BaseRepository):
             .all()
         )
 
-    def list_paginated(self, page: int, per_page: int = 50) -> list[AuditLog]:
+    def list_paginated(self, page: int, per_page: int, organisation_id: int) -> list[AuditLog]:
         from app.db.models.audit_log import AuditLog
 
-        return self.db.query(AuditLog).order_by(AuditLog.created_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
+        return (
+            self.db.query(AuditLog)
+            .filter(AuditLog.organisation_id == organisation_id)
+            .order_by(AuditLog.created_at.desc())
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all()
+        )
 
-    def count_all(self) -> int:
+    def count_for_organisation(self, organisation_id: int) -> int:
         from app.db.models.audit_log import AuditLog
 
-        return self.db.query(func.count(AuditLog.id)).scalar() or 0
+        return self.db.query(func.count(AuditLog.id)).filter(AuditLog.organisation_id == organisation_id).scalar() or 0
 
     def create(self, **data: object) -> AuditLog:
         from app.db.models.audit_log import AuditLog

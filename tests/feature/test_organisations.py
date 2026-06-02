@@ -18,7 +18,7 @@ def _csrf(client):
 def test_organisations_index(client, db_session):
     org = create_organisation(db_session, code="default", name="Default Org")
     _login_as_admin(client, db_session, org)
-    response = client.get("/admin/organisations")
+    response = client.get("/platform/organisations")
     assert response.status_code == 200
 
 
@@ -27,14 +27,14 @@ def test_organisations_index_requires_default_org_admin(client, db_session):
     create_user(db_session, role="ADMIN", email="nd@example.com", organisation=org)
     csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
     client.post("/login", data={"organisation_code": org.code, "email": "nd@example.com", "password": "password", "csrf_token": csrf})
-    response = client.get("/admin/organisations", follow_redirects=False)
+    response = client.get("/platform/organisations", follow_redirects=False)
     assert response.status_code == 403
 
 
 def test_organisations_create_get(client, db_session):
     org = create_organisation(db_session, code="default", name="Default Org")
     _login_as_admin(client, db_session, org)
-    response = client.get("/admin/organisations/create")
+    response = client.get("/platform/organisations/create")
     assert response.status_code == 200
 
 
@@ -43,7 +43,7 @@ def test_organisations_store_success(client, db_session):
     _login_as_admin(client, db_session, org)
     csrf = _csrf(client)
     response = client.post(
-        "/admin/organisations",
+        "/platform/organisations",
         data={"code": "neworg", "name": "New Organisation", "csrf_token": csrf},
         follow_redirects=False,
     )
@@ -60,7 +60,7 @@ def test_organisations_store_duplicate_code(client, db_session):
     _login_as_admin(client, db_session, org)
     csrf = _csrf(client)
     response = client.post(
-        "/admin/organisations",
+        "/platform/organisations",
         data={"code": "existing", "name": "Duplicate", "csrf_token": csrf},
         follow_redirects=False,
     )
@@ -72,7 +72,7 @@ def test_organisations_edit_found(client, db_session):
     default = create_organisation(db_session, code="default", name="Default Org")
     target = create_organisation(db_session, code="editable", name="Editable Org")
     _login_as_admin(client, db_session, default)
-    response = client.get(f"/admin/organisations/{target.id}/edit")
+    response = client.get(f"/platform/organisations/{target.id}/edit")
     assert response.status_code == 200
     assert "Editable Org" in response.text
 
@@ -80,9 +80,9 @@ def test_organisations_edit_found(client, db_session):
 def test_organisations_edit_not_found(client, db_session):
     org = create_organisation(db_session, code="default", name="Default Org")
     _login_as_admin(client, db_session, org)
-    response = client.get("/admin/organisations/9999/edit", follow_redirects=False)
+    response = client.get("/platform/organisations/9999/edit", follow_redirects=False)
     assert response.status_code == 303
-    assert response.headers["location"] == "/admin/organisations"
+    assert response.headers["location"] == "/platform/organisations"
 
 
 def test_organisations_update_success(client, db_session):
@@ -91,7 +91,7 @@ def test_organisations_update_success(client, db_session):
     _login_as_admin(client, db_session, org)
     csrf = _csrf(client)
     response = client.post(
-        f"/admin/organisations/{target.id}",
+        f"/platform/organisations/{target.id}",
         data={"code": "newcode", "name": "New Name", "csrf_token": csrf},
         follow_redirects=False,
     )
@@ -111,7 +111,7 @@ def test_organisations_update_duplicate_code(client, db_session):
     _login_as_admin(client, db_session, default)
     csrf = _csrf(client)
     response = client.post(
-        f"/admin/organisations/{target.id}",
+        f"/platform/organisations/{target.id}",
         data={"code": "taken", "name": "Unique", "csrf_token": csrf},
         follow_redirects=False,
     )
@@ -124,7 +124,7 @@ def test_organisations_update_not_found(client, db_session):
     _login_as_admin(client, db_session, org)
     csrf = _csrf(client)
     response = client.post(
-        "/admin/organisations/9999",
+        "/platform/organisations/9999",
         data={"code": "nope", "name": "Gone", "csrf_token": csrf},
         follow_redirects=False,
     )

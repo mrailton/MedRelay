@@ -16,6 +16,16 @@ class Settings(BaseSettings):
     secret_key: str = "change-me"
 
     database_url: str = "mysql+pymysql://root@127.0.0.1:3306/medrelay"
+    # Sized for ~10 concurrent operators (each request borrows one connection briefly).
+    db_pool_size: int = 10
+    db_max_overflow: int = 10
+    db_pool_recycle: int = 1800
+    db_pool_timeout: int = 30
+
+    redis_url: str | None = None
+
+    realtime_queue_maxsize: int = 64
+    realtime_max_subscribers_per_channel: int = 32
 
     session_lifetime: int = 120
     session_remember_lifetime: int = 43200  # minutes (30 days)

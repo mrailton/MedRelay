@@ -58,6 +58,16 @@ def setup_template_globals() -> None:
     )
 
 
+def _is_platform_admin(user, request: Request) -> bool:
+    """True when the user is an admin of the default org in the current session."""
+    org_id = request.session.get("organisation_id")
+    if user is None or org_id is None:
+        return False
+    if request.session.get("organisation_code") != "default":
+        return False
+    return bool(user.is_admin(org_id))
+
+
 def flash(request: Request, category: str, message: str) -> None:
     request.session[f"flash_{category}"] = message
 
@@ -76,6 +86,7 @@ def render(
         "errors": {},
         "current_org_id": request.session.get("organisation_id"),
         "current_org_code": request.session.get("organisation_code"),
+        "is_platform_admin": _is_platform_admin(user, request),
     }
     for key in ("success", "error"):
         if key in request.session:

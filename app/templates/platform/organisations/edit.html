@@ -1,0 +1,15 @@
+{% extends "layouts/app.html" %}
+{% block title %}Edit Organisation{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Edit Organisation</h1>
+<form method="POST" action="{{ url_for('platform.organisations.update', organisation_id=org.id) }}" class="card bg-base-100 max-w-lg shadow-sm">
+    <div class="card-body gap-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label class="form-control"><span class="label-text">Code</span><input type="text" name="code" value="{{ org.code }}" class="input input-bordered" required></label>
+        {% if errors and errors.code %}<p class="text-error text-sm">{{ errors.code }}</p>{% endif %}
+        <label class="form-control"><span class="label-text">Name</span><input type="text" name="name" value="{{ org.name }}" class="input input-bordered" required></label>
+        {% if errors and errors.name %}<p class="text-error text-sm">{{ errors.name }}</p>{% endif %}
+        <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+</form>
+{% endblock %}

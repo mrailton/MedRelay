@@ -2,6 +2,7 @@
 
 import re
 
+from app.services.audit import write_audit_log
 from tests.factories import create_event, create_organisation, create_user, make_incident
 
 
@@ -86,6 +87,46 @@ def test_cannot_update_other_org_incident_status(client, db_session):
     )
     assert response.status_code == 303
     assert response.headers["location"] == "/"
+
+
+def test_admin_audit_logs_scoped_to_session_organisation(client, db_session):
+    org_a = create_organisation(db_session, code="audita", name="Audit Org A")
+    org_b = create_organisation(db_session, code="auditb", name="Audit Org B")
+    admin_a = create_user(db_session, role="ADMIN", email="admin-a@example.com", organisation=org_a)
+    db_session.commit()
+
+    write_audit_log(
+        db_session,
+        action="test.org_a",
+        entity_type="test",
+        entity_id="1",
+        organisation_id=org_a.id,
+        user=admin_a,
+    )
+    write_audit_log(
+        db_session,
+        action="test.org_b",
+        entity_type="test",
+        entity_id="2",
+        organisation_id=org_b.id,
+        user=admin_a,
+    )
+    db_session.commit()
+
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    client.post(
+        "/login",
+        data={
+            "organisation_code": org_a.code,
+            "email": admin_a.email,
+            "password": "password",
+            "csrf_token": csrf,
+        },
+    )
+    response = client.get("/admin/audit-logs")
+    assert response.status_code == 200
+    assert "test.org_a" in response.text
+    assert "test.org_b" not in response.text
 
 
 def test_web_entrypoint_exports_app():

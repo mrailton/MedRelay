@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -20,11 +21,15 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    register_route_names(list(app.routes))
-    yield
     from app.realtime.hub import realtime_hub
 
-    realtime_hub.clear()
+    register_route_names(list(app.routes))
+    realtime_hub.bind_loop(asyncio.get_running_loop())
+    await realtime_hub.start()
+    try:
+        yield
+    finally:
+        await realtime_hub.stop()
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)

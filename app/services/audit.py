@@ -15,6 +15,7 @@ def write_audit_log(
     action: str,
     entity_type: str,
     entity_id: str,
+    organisation_id: int,
     before: dict | None = None,
     after: dict | None = None,
     user: User | None = None,
@@ -23,6 +24,7 @@ def write_audit_log(
     repo = AuditLogRepository(db)
     repo.create(
         user_id=user.id if user else None,
+        organisation_id=organisation_id,
         action=action,
         entity_type=entity_type,
         entity_id=entity_id,
@@ -38,9 +40,14 @@ def list_audit_logs_for_entity(db: Session, entity_type: str, entity_id: str) ->
     return AuditLogRepository(db).list_by_entity(entity_type, entity_id)
 
 
-def list_audit_logs_paginated(db: Session, page: int = 1, per_page: int = 50) -> list:
-    return AuditLogRepository(db).list_paginated(page, per_page)
+def list_audit_logs_paginated(
+    db: Session,
+    organisation_id: int,
+    page: int = 1,
+    per_page: int = 50,
+) -> list:
+    return AuditLogRepository(db).list_paginated(page, per_page, organisation_id)
 
 
-def count_audit_logs(db: Session) -> int:
-    return AuditLogRepository(db).count_all()
+def count_audit_logs(db: Session, organisation_id: int) -> int:
+    return AuditLogRepository(db).count_for_organisation(organisation_id)

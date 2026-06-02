@@ -19,6 +19,8 @@ def create_user(
     data: dict,
     actor: User,
     request: Request | None = None,
+    *,
+    organisation_id: int | None = None,
 ) -> User:
     repo = UserRepository(db)
     user = repo.create(
@@ -43,15 +45,18 @@ def create_user(
 
     from app.services.audit import write_audit_log
 
-    write_audit_log(
-        db,
-        action="user.created",
-        entity_type="user",
-        entity_id=str(user.id),
-        after={"id": user.id, "name": user.name, "email": user.email, "role": user.role},
-        user=actor,
-        request=request,
-    )
+    audit_org_id = organisation_id or (organisation_ids[0] if organisation_ids else None)
+    if audit_org_id is not None:
+        write_audit_log(
+            db,
+            action="user.created",
+            entity_type="user",
+            entity_id=str(user.id),
+            organisation_id=audit_org_id,
+            after={"id": user.id, "name": user.name, "email": user.email, "role": user.role},
+            user=actor,
+            request=request,
+        )
     return user
 
 
@@ -102,5 +107,5 @@ def create_admin_user(
     if UserRepository(db).email_exists(form.email):
         return CreateUserOutcome(success=False, errors={"email": "Email already exists."})
 
-    user = create_user(db, form.to_service_dict(org_ids), actor, request)
+    user = create_user(db, form.to_service_dict(org_ids), actor, request, organisation_id=organisation_id)
     return CreateUserOutcome(success=True, user=user)

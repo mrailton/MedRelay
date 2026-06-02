@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
@@ -52,17 +53,27 @@ def create_incident(
 ) -> Incident:
     authorize(user, "create", "incident", organisation_id=organisation_id or event.organisation_id)
     repo = IncidentRepository(db)
-    incident = repo.create(
-        event_id=event.id,
-        reference=repo.get_next_reference(event.id),
-        location=data["location"],
-        priority=data["priority"],
-        category=data["category"],
-        description=data["description"],
-        status=IncidentStatus.NEW.value,
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
-    )
+    incident = None
+    for attempt in range(3):
+        try:
+            incident = repo.create(
+                event_id=event.id,
+                reference=repo.get_next_reference(event.id),
+                location=data["location"],
+                priority=data["priority"],
+                category=data["category"],
+                description=data["description"],
+                status=IncidentStatus.NEW.value,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+            break
+        except IntegrityError:
+            db.rollback()
+            db.refresh(event)
+            if attempt == 2:
+                raise
+    assert incident is not None
     from app.serialization import incident_to_dict
     from app.services.audit import write_audit_log
 
@@ -71,6 +82,7 @@ def create_incident(
         action="incident.created",
         entity_type="incident",
         entity_id=str(incident.id),
+        organisation_id=organisation_id or event.organisation_id,
         after=incident_to_dict(incident),
         user=user,
         request=request,
@@ -102,6 +114,11 @@ def update_incident_status(
 ) -> Incident:
     org_id = organisation_id or (incident.event.organisation_id if incident.event else None)
     authorize(user, "updateStatus", "incident", incident, organisation_id=org_id)
+    assert org_id is not None
+    locked = IncidentRepository(db).get_for_update(incident.id, org_id)
+    if not locked:
+        return incident
+    incident = locked
     from app.serialization import incident_to_dict
 
     db.refresh(incident, attribute_names=["resources"])
@@ -129,6 +146,7 @@ def update_incident_status(
         action="incident.status.updated",
         entity_type="incident",
         entity_id=str(incident.id),
+        organisation_id=org_id,
         before=before,
         after=incident_to_dict(incident),
         user=user,
@@ -148,6 +166,11 @@ def assign_resource_to_incident(
 ) -> Incident:
     org_id = organisation_id or (incident.event.organisation_id if incident.event else None)
     authorize(user, "assignResource", "incident", incident, organisation_id=org_id)
+    assert org_id is not None
+    locked = IncidentRepository(db).get_for_update(incident.id, org_id)
+    if not locked:
+        return incident
+    incident = locked
     from app.serialization import incident_to_dict
 
     db.refresh(incident, attribute_names=["resources"])
@@ -181,6 +204,7 @@ def assign_resource_to_incident(
         action="incident.resource.assigned",
         entity_type="incident",
         entity_id=str(incident.id),
+        organisation_id=org_id,
         before=before,
         after=incident_to_dict(incident),
         user=user,
@@ -207,6 +231,7 @@ def add_incident_note(
 ) -> IncidentNote:
     org_id = organisation_id or (incident.event.organisation_id if incident.event else None)
     authorize(user, "update", "incident", incident, organisation_id=org_id)
+    assert org_id is not None
     note_repo = IncidentNoteRepository(db)
     note = note_repo.create(
         incident_id=incident.id,
@@ -222,6 +247,7 @@ def add_incident_note(
         action="incident.note.added",
         entity_type="incident",
         entity_id=str(incident.id),
+        organisation_id=org_id,
         after={"content": content},
         user=user,
         request=request,

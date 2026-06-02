@@ -30,6 +30,7 @@ def create_staff(db: Session, data: dict, user: User, request: Request | None = 
         action="staff.created",
         entity_type="staff",
         entity_id=str(staff.id),
+        organisation_id=staff.organisation_id,
         after={
             "id": staff.id,
             "first_name": staff.first_name,

@@ -63,6 +63,7 @@ def create_resource(
         action="resource.created",
         entity_type="resource",
         entity_id=str(resource.id),
+        organisation_id=event.organisation_id,
         after=resource_to_dict(resource),
         user=user,
         request=request,
@@ -80,6 +81,7 @@ def update_resource_status(
 ) -> Resource:
     org_id = resource.event.organisation_id if resource.event else None
     authorize(user, "update", "resource", resource, organisation_id=org_id)
+    assert org_id is not None
     from app.serialization import resource_to_dict
 
     before = resource_to_dict(resource)
@@ -94,6 +96,7 @@ def update_resource_status(
         action="resource.status.updated",
         entity_type="resource",
         entity_id=str(resource.id),
+        organisation_id=org_id,
         before=before,
         after=resource_to_dict(resource),
         user=user,
@@ -113,6 +116,7 @@ def assign_staff_to_resource(
 ) -> Resource:
     org_id = organisation_id or (resource.event.organisation_id if resource.event else None)
     authorize(user, "update", "resource", resource, organisation_id=org_id)
+    assert org_id is not None
     if staff not in resource.staff:
         resource.staff.append(staff)
     from app.services.resource_capability import recalculate_resource_capability
@@ -126,6 +130,7 @@ def assign_staff_to_resource(
         action="resource.staff.assigned",
         entity_type="resource",
         entity_id=str(resource.id),
+        organisation_id=org_id,
         after={"staff_id": staff.id, "staff_name": staff.full_name},
         user=user,
         request=request,
@@ -144,6 +149,7 @@ def remove_staff_from_resource(
 ) -> Resource:
     org_id = organisation_id or (resource.event.organisation_id if resource.event else None)
     authorize(user, "update", "resource", resource, organisation_id=org_id)
+    assert org_id is not None
     if staff in resource.staff:
         resource.staff.remove(staff)
     from app.services.resource_capability import recalculate_resource_capability
@@ -157,6 +163,7 @@ def remove_staff_from_resource(
         action="resource.staff.removed",
         entity_type="resource",
         entity_id=str(resource.id),
+        organisation_id=org_id,
         after={"staff_id": staff.id, "staff_name": staff.full_name},
         user=user,
         request=request,
