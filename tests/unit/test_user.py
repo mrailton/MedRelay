@@ -1,6 +1,3 @@
-import pytest
-
-from app.db.models.organisation import Organisation
 from app.db.models.user import User
 from app.enums import UserRole
 from tests.factories import create_organisation, create_user

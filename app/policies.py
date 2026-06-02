@@ -4,6 +4,22 @@ from app.enums import UserRole
 from app.repositories import Event, Incident, Resource, Staff, User
 
 
+class AuthorizationError(Exception):
+    """Raised when a user is not allowed to perform an action."""
+
+
+def authorize(
+    user: User,
+    action: str,
+    subject: str | None = None,
+    obj=None,
+    *,
+    organisation_id: int | None = None,
+) -> None:
+    if not can(user, action, subject, obj, organisation_id=organisation_id):
+        raise AuthorizationError(f"Not allowed: {action} on {subject}")
+
+
 def _is_controller_or_admin(user: User, organisation_id: int | None = None) -> bool:
     role = user.get_role(organisation_id) if organisation_id else user.user_role
     return role in (UserRole.ADMIN, UserRole.CONTROLLER)

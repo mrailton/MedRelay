@@ -6,9 +6,9 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.db.session import get_db
 from app.repositories import User
 from app.repositories.organisation import OrganisationRepository
-from app.repositories.session import get_db
 from app.repositories.user import UserRepository
 
 

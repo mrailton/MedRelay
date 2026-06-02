@@ -2,12 +2,16 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
 from app.dependencies import LoginRequired
+from app.handlers.validation import request_validation_exception_handler
+from app.middleware.security import SecurityHeadersMiddleware
+from app.middleware.session import RememberSessionMiddleware
 from app.routes import api_router
 from app.templating import register_route_names, setup_template_globals
 
@@ -24,6 +28,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(
+    RememberSessionMiddleware,
+    remember_max_age_seconds=settings.session_remember_lifetime * 60,
+)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.secret_key,
@@ -37,6 +47,8 @@ if static_dir.exists():
 
 setup_template_globals()
 app.include_router(api_router)
+
+app.add_exception_handler(RequestValidationError, request_validation_exception_handler)  # type: ignore[arg-type]
 
 
 @app.exception_handler(LoginRequired)

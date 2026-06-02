@@ -18,8 +18,8 @@ from app.config import get_settings
 from app.db import models  # noqa: F401
 from app.db.base import Base
 from app.db.session import engine as module_engine
+from app.dependencies import get_db
 from app.main import app
-from app.repositories.session import get_db
 from tests.factories import create_organisation, create_user
 
 # Use plaintext passwords in tests — bcrypt with 12 rounds is 200ms+ per hash

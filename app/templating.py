@@ -74,6 +74,8 @@ def render(request: Request, name: str, context: dict | None = None, user=None):
     for key in ("success", "error"):
         if key in request.session:
             ctx[key] = request.session.pop(f"flash_{key}", request.session.pop(key, None))
+    if "validation_errors" in request.session:
+        ctx["errors"] = request.session.pop("validation_errors")
     if context:
         ctx.update(context)
     return templates.TemplateResponse(request, name, ctx)

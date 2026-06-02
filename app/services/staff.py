@@ -5,11 +5,14 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
+from app.policies import authorize
 from app.repositories import Staff, User
 from app.repositories.staff import StaffRepository
 
 
 def create_staff(db: Session, data: dict, user: User, request: Request | None = None, organisation_id: int | None = None) -> Staff:
+    org_id = data.get("organisation_id", organisation_id)
+    authorize(user, "create", "staff", organisation_id=org_id)
     repo = StaffRepository(db)
     staff = repo.create(
         organisation_id=data.get("organisation_id", organisation_id),

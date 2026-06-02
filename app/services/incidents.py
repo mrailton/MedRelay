@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 
 from app.enums import IncidentStatus, ResourceStatus
+from app.policies import authorize
 from app.realtime.hub import realtime_hub
 from app.repositories import Event, Incident, IncidentNote, Resource, User
 from app.repositories.incident import IncidentRepository
@@ -47,7 +48,9 @@ def create_incident(
     data: dict,
     user: User,
     request: Request | None = None,
+    organisation_id: int | None = None,
 ) -> Incident:
+    authorize(user, "create", "incident", organisation_id=organisation_id or event.organisation_id)
     repo = IncidentRepository(db)
     incident = repo.create(
         event_id=event.id,
@@ -95,7 +98,10 @@ def update_incident_status(
     status: IncidentStatus,
     user: User,
     request: Request | None = None,
+    organisation_id: int | None = None,
 ) -> Incident:
+    org_id = organisation_id or (incident.event.organisation_id if incident.event else None)
+    authorize(user, "updateStatus", "incident", incident, organisation_id=org_id)
     from app.serialization import incident_to_dict
 
     db.refresh(incident, attribute_names=["resources"])
@@ -138,7 +144,10 @@ def assign_resource_to_incident(
     resource_ids: list[int],
     user: User,
     request: Request | None = None,
+    organisation_id: int | None = None,
 ) -> Incident:
+    org_id = organisation_id or (incident.event.organisation_id if incident.event else None)
+    authorize(user, "assignResource", "incident", incident, organisation_id=org_id)
     from app.serialization import incident_to_dict
 
     db.refresh(incident, attribute_names=["resources"])
@@ -152,7 +161,7 @@ def assign_resource_to_incident(
     resource_repo = ResourceRepository(db)
     incident.resources.clear()
     if resource_ids:
-        incident.resources.extend(resource_repo.get_by_ids(resource_ids))
+        incident.resources.extend(resource_repo.get_by_ids_for_event(incident.event_id, resource_ids))
     incident.updated_at = datetime.now(UTC)
 
     if added_ids:
@@ -194,7 +203,10 @@ def add_incident_note(
     content: str,
     user: User,
     request: Request | None = None,
+    organisation_id: int | None = None,
 ) -> IncidentNote:
+    org_id = organisation_id or (incident.event.organisation_id if incident.event else None)
+    authorize(user, "update", "incident", incident, organisation_id=org_id)
     note_repo = IncidentNoteRepository(db)
     note = note_repo.create(
         incident_id=incident.id,
@@ -222,21 +234,21 @@ def add_incident_note(
     return note
 
 
-def get_incident(db: Session, incident_id: int) -> Incident | None:
-    return IncidentRepository(db).get(incident_id)
+def get_incident(db: Session, incident_id: int, organisation_id: int | None = None) -> Incident | None:
+    return IncidentRepository(db).get(incident_id, organisation_id)
 
 
-def get_incident_with_details(db: Session, incident_id: int) -> Incident | None:
-    return IncidentRepository(db).get_with_event_resources_notes(incident_id)
+def get_incident_with_details(db: Session, incident_id: int, organisation_id: int | None = None) -> Incident | None:
+    return IncidentRepository(db).get_with_event_resources_notes(incident_id, organisation_id)
 
 
-def list_incidents_by_event(db: Session, event_id: int) -> list[Incident]:
-    return IncidentRepository(db).list_by_event(event_id)
+def list_incidents_by_event(db: Session, event_id: int, organisation_id: int | None = None) -> list[Incident]:
+    return IncidentRepository(db).list_by_event(event_id, organisation_id)
 
 
-def count_incidents_by_event(db: Session, event_id: int) -> int:
-    return IncidentRepository(db).count_by_event(event_id)
+def count_incidents_by_event(db: Session, event_id: int, organisation_id: int | None = None) -> int:
+    return IncidentRepository(db).count_by_event(event_id, organisation_id)
 
 
-def count_active_incidents_by_event(db: Session, event_id: int) -> int:
-    return IncidentRepository(db).count_active_by_event(event_id)
+def count_active_incidents_by_event(db: Session, event_id: int, organisation_id: int | None = None) -> int:
+    return IncidentRepository(db).count_active_by_event(event_id, organisation_id)

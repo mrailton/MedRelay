@@ -25,17 +25,20 @@ def test_publish_payload_shape(db_session, organisation):
 
 def test_subscribe_unsubscribe():
     ch = "test.channel"
+
     async def run():
         q = await realtime_hub.subscribe(ch)
         assert q is not None
         assert len(realtime_hub._subscribers[ch]) == 1
         await realtime_hub.unsubscribe(ch, q)
         assert ch not in realtime_hub._subscribers
+
     asyncio.run(run())
 
 
 def test_publish_sync_delivers_message():
     ch = "test.deliver"
+
     async def run():
         q = await realtime_hub.subscribe(ch)
         realtime_hub.publish_sync(ch, "test.event", {"key": "value"})
@@ -43,12 +46,14 @@ def test_publish_sync_delivers_message():
         assert "test.event" in msg
         assert "key" in msg
         await realtime_hub.unsubscribe(ch, q)
+
     asyncio.run(run())
 
 
 def test_publish_sync_queue_full_does_not_raise():
     """When a queue is full, publish_sync silently drops the message."""
     ch = "test.full"
+
     async def run():
         q = asyncio.Queue(maxsize=0)
         realtime_hub._subscribers[ch] = [q]
@@ -56,6 +61,7 @@ def test_publish_sync_queue_full_does_not_raise():
         realtime_hub.publish_sync(ch, "test.event", {"x": "y"})
         # Clean up
         await realtime_hub.unsubscribe(ch, q)
+
     asyncio.run(run())
 
 

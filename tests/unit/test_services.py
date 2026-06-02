@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
 
 from app.db.models.audit_log import AuditLog
-from app.repositories.user import UserRepository
 from app.repositories.staff import StaffRepository
+from app.repositories.user import UserRepository
 from app.services.audit import count_audit_logs, list_audit_logs_for_entity, list_audit_logs_paginated, write_audit_log
 from app.services.events import create_event as create_event_svc
 from app.services.events import get_event, list_active_events, list_events, update_event
@@ -200,7 +200,6 @@ def test_get_user_by_email(db_session):
 
 
 def test_staff_repo_list_by_ids_with_org(db_session):
-    from app.repositories.staff import StaffRepository
 
     org = _make_org(db_session)
     staff1 = StaffRepository(db_session).create(first_name="A", last_name="B", clinical_level="EMT", organisation_id=org.id)
@@ -259,6 +258,7 @@ def test_create_user_with_org_roles(db_session):
     )
     db_session.commit()
     from app.repositories.organisation import OrganisationRepository
+
     assert OrganisationRepository(db_session).get_user_role(user.id, org1.id) == "ADMIN"
     assert OrganisationRepository(db_session).get_user_role(user.id, org2.id) == "READ_ONLY"
 

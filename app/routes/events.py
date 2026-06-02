@@ -1,26 +1,19 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import TYPE_CHECKING
-
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
 
 from app import policies
-from app.dependencies import ControllerUser, CurrentUser, require_organisation, verify_csrf
-from app.repositories.session import get_db
+from app.dependencies import ControllerUser, CurrentOrg, CurrentUser, DbSession, verify_csrf
+from app.schemas.forms import EventCreateForm, EventUpdateForm, event_create_form, event_update_form
 from app.services.events import create_event, get_event, list_events, update_event
 from app.templating import render
-
-if TYPE_CHECKING:
-    pass
 
 router = APIRouter(prefix="/events", tags=["events"])
 
 
 @router.get("", name="events.index")
-def events_index(request: Request, user: CurrentUser, db: Session = Depends(get_db), organisation_id: int = Depends(require_organisation)):
+def events_index(request: Request, user: CurrentUser, db: DbSession, organisation_id: CurrentOrg):
     events = list_events(db, organisation_id)
     return render(request, "events/index.html", {"events": events}, user=user)
 
@@ -36,37 +29,18 @@ def events_create(request: Request, user: CurrentUser):
 def events_store(
     request: Request,
     user: ControllerUser,
-    db: Session = Depends(get_db),
-    organisation_id: int = Depends(require_organisation),
-    name: str = Form(...),
-    location: str = Form(...),
-    start_time: str = Form(...),
-    end_time: str | None = Form(None),
-    is_active: bool = Form(False),
-    notes: str | None = Form(None),
-    csrf_token: str | None = Form(None),
+    db: DbSession,
+    organisation_id: CurrentOrg,
+    form: EventCreateForm = Depends(event_create_form),
 ):
-    verify_csrf(request, csrf_token)
-    event = create_event(
-        db,
-        {
-            "organisation_id": organisation_id,
-            "name": name,
-            "location": location,
-            "start_time": datetime.fromisoformat(start_time.replace("Z", "+00:00")) if "T" in start_time else datetime.fromisoformat(start_time),
-            "end_time": datetime.fromisoformat(end_time) if end_time else None,
-            "is_active": is_active,
-            "notes": notes,
-        },
-        user,
-        request,
-    )
+    verify_csrf(request, form.csrf_token)
+    event = create_event(db, form.to_service_dict(organisation_id), user, request)
     db.commit()
     return RedirectResponse(url=f"/events/{event.id}", status_code=303)
 
 
 @router.get("/{event_id}", name="events.show")
-def events_show(request: Request, event_id: int, user: CurrentUser, db: Session = Depends(get_db), organisation_id: int = Depends(require_organisation)):
+def events_show(request: Request, event_id: int, user: CurrentUser, db: DbSession, organisation_id: CurrentOrg):
     event = get_event(db, event_id, organisation_id)
     if not event:
         return RedirectResponse(url="/events", status_code=303)
@@ -74,7 +48,7 @@ def events_show(request: Request, event_id: int, user: CurrentUser, db: Session 
 
 
 @router.get("/{event_id}/edit", name="events.edit")
-def events_edit(request: Request, event_id: int, user: CurrentUser, db: Session = Depends(get_db), organisation_id: int = Depends(require_organisation)):
+def events_edit(request: Request, event_id: int, user: CurrentUser, db: DbSession, organisation_id: CurrentOrg):
     event = get_event(db, event_id, organisation_id)
     if not event or not policies.can_update_event(user, event):
         return RedirectResponse(url=f"/events/{event_id}", status_code=303)
@@ -86,30 +60,14 @@ def events_update(
     request: Request,
     event_id: int,
     user: ControllerUser,
-    db: Session = Depends(get_db),
-    organisation_id: int = Depends(require_organisation),
-    name: str | None = Form(None),
-    location: str | None = Form(None),
-    start_time: str | None = Form(None),
-    end_time: str | None = Form(None),
-    is_active: bool = Form(False),
-    notes: str | None = Form(None),
-    csrf_token: str | None = Form(None),
+    db: DbSession,
+    organisation_id: CurrentOrg,
+    form: EventUpdateForm = Depends(event_update_form),
 ):
-    verify_csrf(request, csrf_token)
+    verify_csrf(request, form.csrf_token)
     event = get_event(db, event_id, organisation_id)
     if not event:
         return RedirectResponse(url="/events", status_code=303)
-    data: dict[str, object] = {}
-    if name is not None:
-        data["name"] = name
-    if location is not None:
-        data["location"] = location
-    if start_time:
-        data["start_time"] = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-    data["end_time"] = datetime.fromisoformat(end_time) if end_time else None
-    data["is_active"] = is_active
-    data["notes"] = notes
-    update_event(db, event, data, user, request)
+    update_event(db, event, form.to_service_dict(), user, request)
     db.commit()
     return RedirectResponse(url=f"/events/{event.id}", status_code=303)

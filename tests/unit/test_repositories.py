@@ -1,4 +1,3 @@
-from app.db.models.organisation import Organisation
 from app.enums import UserRole
 from app.repositories.organisation import OrganisationRepository
 from app.repositories.session import create_session
@@ -24,7 +23,7 @@ def test_org_repo_list_all(db_session):
 
 def test_org_repo_get_default(db_session):
     default = create_organisation(db_session, code="default", name="Default")
-    other = create_organisation(db_session, code="other", name="Other")
+    create_organisation(db_session, code="other", name="Other")
     repo = OrganisationRepository(db_session)
     result = repo.get_default()
     assert result is not None

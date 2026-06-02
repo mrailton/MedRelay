@@ -1,19 +1,5 @@
-from collections.abc import Generator
+"""Re-export session helpers (canonical implementation in app.db.session)."""
 
-from sqlalchemy.orm import Session
+from app.db.session import create_session, get_db
 
-
-def get_db() -> Generator[Session]:
-    from app.db.session import SessionLocal
-
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-def create_session() -> Session:
-    from app.db.session import SessionLocal
-
-    return SessionLocal()
+__all__ = ["create_session", "get_db"]

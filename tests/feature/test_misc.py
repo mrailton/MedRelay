@@ -291,6 +291,3 @@ def test_resources_remove_staff_not_found(client, db_session, organisation):
 def test_realtime_events_requires_auth(client, db_session, organisation):
     response = client.get("/realtime/events?event_id=1", follow_redirects=False)
     assert response.status_code == 303
-
-
-

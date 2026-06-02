@@ -18,7 +18,7 @@ clean: ## Remove cache and temporary files
 
 # ── Testing ──────────────────────────────────────────────────────────────────
 
-test: ## Run test suite
+test: ## Run test suite (with coverage gate)
 	uv run pytest
 
 test-verbose: ## Run test suite with verbose output

@@ -4,7 +4,6 @@ import pytest
 from fastapi import HTTPException, status
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
-from starlette.testclient import TestClient
 
 from app.dependencies import (
     LoginRequired,
@@ -20,7 +19,7 @@ from tests.factories import create_organisation, create_user
 @pytest.fixture
 def session_request():
     """Return a Request with session middleware installed."""
-    middleware = SessionMiddleware(app, secret_key="test")
+    SessionMiddleware(app, secret_key="test")
     scope = {
         "type": "http",
         "method": "GET",

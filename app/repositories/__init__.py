@@ -35,7 +35,6 @@ __all__ = [
     "OrganisationRepository",
     "Resource",
     "ResourceRepository",
-    "SessionLocal",
     "Staff",
     "StaffRepository",
     "User",

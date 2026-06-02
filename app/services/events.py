@@ -5,11 +5,14 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
+from app.policies import authorize
 from app.repositories import Event, User
 from app.repositories.event import EventRepository
 
 
 def create_event(db: Session, data: dict, user: User, request: Request | None = None, organisation_id: int | None = None) -> Event:
+    org_id = data.get("organisation_id", organisation_id)
+    authorize(user, "create", "event", organisation_id=org_id)
     repo = EventRepository(db)
     event = repo.create(
         organisation_id=data.get("organisation_id", organisation_id),
@@ -42,6 +45,7 @@ def create_event(db: Session, data: dict, user: User, request: Request | None = 
 
 
 def update_event(db: Session, event: Event, data: dict, user: User, request: Request | None = None) -> Event:
+    authorize(user, "update", "event", event, organisation_id=event.organisation_id)
     before = {
         "id": event.id,
         "name": event.name,

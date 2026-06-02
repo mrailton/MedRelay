@@ -22,3 +22,7 @@ def get_db() -> Generator[Session]:
         yield db
     finally:
         db.close()
+
+
+def create_session() -> Session:
+    return SessionLocal()

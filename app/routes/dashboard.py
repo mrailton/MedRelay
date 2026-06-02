@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse, Response
-from sqlalchemy.orm import Session
 
-from app.dependencies import CurrentUser, require_organisation, verify_csrf
-from app.repositories.session import get_db
+from app.dependencies import CurrentOrg, CurrentUser, DbSession, verify_csrf
+from app.schemas.forms import DashboardSelectEventForm, dashboard_select_event_form
 from app.services.events import get_event, list_active_events
 from app.services.incidents import (
     count_active_incidents_by_event,
@@ -23,9 +20,6 @@ from app.services.resources import (
 from app.services.staff import list_staff
 from app.templating import render
 
-if TYPE_CHECKING:
-    pass
-
 router = APIRouter(tags=["dashboard"])
 
 
@@ -33,14 +27,13 @@ router = APIRouter(tags=["dashboard"])
 def dashboard(
     request: Request,
     user: CurrentUser,
-    db: Session = Depends(get_db),
-    organisation_id: int = Depends(require_organisation),
-    selected_event_id: int | None = Form(None),
-    csrf_token: str | None = Form(None),
+    db: DbSession,
+    organisation_id: CurrentOrg,
+    form: DashboardSelectEventForm = Depends(dashboard_select_event_form),
 ):
-    if request.method == "POST" and selected_event_id is not None:
-        verify_csrf(request, csrf_token)
-        request.session["selected_event_id"] = int(selected_event_id)
+    if request.method == "POST" and form.selected_event_id is not None:
+        verify_csrf(request, form.csrf_token)
+        request.session["selected_event_id"] = int(form.selected_event_id)
         accept = request.headers.get("accept", "")
         if "application/json" in accept or request.headers.get("x-requested-with") == "XMLHttpRequest":
             return Response(status_code=204)
@@ -57,13 +50,13 @@ def dashboard(
     if selected_event_id is not None:
         selected_event = get_event(db, selected_event_id, organisation_id)
         if selected_event:
-            incidents = list_incidents_by_event(db, selected_event.id)
-            resources = list_resources_by_event(db, selected_event.id)
-            total_incidents = count_incidents_by_event(db, selected_event.id)
-            active_incidents = count_active_incidents_by_event(db, selected_event.id)
-            available_resources = count_available_resources_by_event(db, selected_event.id)
-            deployed_resources = count_deployed_resources_by_event(db, selected_event.id)
-            out_of_service = count_out_of_service_resources_by_event(db, selected_event.id)
+            incidents = list_incidents_by_event(db, selected_event.id, organisation_id)
+            resources = list_resources_by_event(db, selected_event.id, organisation_id)
+            total_incidents = count_incidents_by_event(db, selected_event.id, organisation_id)
+            active_incidents = count_active_incidents_by_event(db, selected_event.id, organisation_id)
+            available_resources = count_available_resources_by_event(db, selected_event.id, organisation_id)
+            deployed_resources = count_deployed_resources_by_event(db, selected_event.id, organisation_id)
+            out_of_service = count_out_of_service_resources_by_event(db, selected_event.id, organisation_id)
             dashboard_data = {
                 "event": selected_event,
                 "incidents": incidents,
