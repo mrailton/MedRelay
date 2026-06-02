@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-from app.dependencies import CurrentUser, verify_csrf
+from app.dependencies import CurrentUser, require_organisation, verify_csrf
 from app.repositories.session import get_db
 from app.services.events import get_event, list_active_events
 from app.services.incidents import (
@@ -34,6 +34,7 @@ def dashboard(
     request: Request,
     user: CurrentUser,
     db: Session = Depends(get_db),
+    organisation_id: int = Depends(require_organisation),
     selected_event_id: int | None = Form(None),
     csrf_token: str | None = Form(None),
 ):
@@ -45,7 +46,7 @@ def dashboard(
             return Response(status_code=204)
         return RedirectResponse(url="/", status_code=303)
 
-    active_events = list_active_events(db)
+    active_events = list_active_events(db, organisation_id)
     selected_event_id = request.session.get("selected_event_id")
     if selected_event_id is None and active_events:
         selected_event_id = active_events[0].id
@@ -54,7 +55,7 @@ def dashboard(
     dashboard_data = None
 
     if selected_event_id is not None:
-        selected_event = get_event(db, selected_event_id)
+        selected_event = get_event(db, selected_event_id, organisation_id)
         if selected_event:
             incidents = list_incidents_by_event(db, selected_event.id)
             resources = list_resources_by_event(db, selected_event.id)
@@ -76,7 +77,7 @@ def dashboard(
                 },
             }
 
-    all_staff = list_staff(db)
+    all_staff = list_staff(db, organisation_id)
 
     return render(
         request,

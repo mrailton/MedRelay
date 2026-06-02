@@ -3,13 +3,14 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.models.resource_staff import resource_staff
 
 if TYPE_CHECKING:
+    from app.db.models.organisation import Organisation
     from app.db.models.resource import Resource
 
 
@@ -17,6 +18,7 @@ class Staff(Base):
     __tablename__ = "staff"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    organisation_id: Mapped[int] = mapped_column(Integer, ForeignKey("organisations.id", ondelete="CASCADE"), nullable=False)
     first_name: Mapped[str] = mapped_column(String(255))
     last_name: Mapped[str] = mapped_column(String(255))
     clinical_level: Mapped[str] = mapped_column(String(20))
@@ -24,6 +26,7 @@ class Staff(Base):
     created_at: Mapped[datetime | None] = mapped_column(nullable=True)
     updated_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
+    organisation: Mapped[Organisation] = relationship(back_populates="staff_members")
     resources: Mapped[list[Resource]] = relationship(secondary=resource_staff, back_populates="staff")
 
     @property

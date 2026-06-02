@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.dependencies import ControllerUser, CurrentUser, verify_csrf
+from app.dependencies import ControllerUser, CurrentUser, require_organisation, verify_csrf
 from app.enums import ResourceStatus
 from app.repositories.session import get_db
 from app.services.events import get_event
@@ -28,8 +28,8 @@ router = APIRouter(tags=["resources"])
 
 
 @router.get("/events/{event_id}/resources", name="events.resources.index")
-def resources_index(request: Request, event_id: int, user: CurrentUser, db: Session = Depends(get_db)):
-    event = get_event(db, event_id)
+def resources_index(request: Request, event_id: int, user: CurrentUser, db: Session = Depends(get_db), organisation_id: int = Depends(require_organisation)):
+    event = get_event(db, event_id, organisation_id)
     resources = list_resources_by_event(db, event_id)
     return render(request, "resources/index.html", {"event": event, "resources": resources}, user=user)
 
@@ -40,13 +40,14 @@ def resources_store(
     event_id: int,
     user: ControllerUser,
     db: Session = Depends(get_db),
+    organisation_id: int = Depends(require_organisation),
     name: str = Form(...),
     resource_type: str = Form(...),
     staff_ids: list[int] = Form(default=[]),
     csrf_token: str | None = Form(None),
 ):
     verify_csrf(request, csrf_token)
-    event = get_event(db, event_id)
+    event = get_event(db, event_id, organisation_id)
     if not event:
         return RedirectResponse(url="/events", status_code=303)
     resource = create_resource(
@@ -61,11 +62,11 @@ def resources_store(
 
 
 @router.get("/resources/{resource_id}", name="resources.show")
-def resources_show(request: Request, resource_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+def resources_show(request: Request, resource_id: int, user: CurrentUser, db: Session = Depends(get_db), organisation_id: int = Depends(require_organisation)):
     resource = get_resource_with_details(db, resource_id)
     if not resource:
         return RedirectResponse(url="/", status_code=303)
-    all_staff = list_staff_by_last_name(db)
+    all_staff = list_staff_by_last_name(db, organisation_id)
     return render(
         request,
         "resources/show.html",
@@ -80,6 +81,7 @@ def resources_update_status(
     resource_id: int,
     user: ControllerUser,
     db: Session = Depends(get_db),
+    organisation_id: int = Depends(require_organisation),
     status: str = Form(...),
     csrf_token: str | None = Form(None),
 ):
@@ -102,6 +104,7 @@ def resources_assign_staff(
     resource_id: int,
     user: ControllerUser,
     db: Session = Depends(get_db),
+    organisation_id: int = Depends(require_organisation),
     staff_id: int = Form(...),
     csrf_token: str | None = Form(None),
 ):
@@ -109,7 +112,7 @@ def resources_assign_staff(
     resource = get_resource_with_details(db, resource_id)
     if not resource:
         return RedirectResponse(url="/", status_code=303)
-    staff = get_staff(db, staff_id)
+    staff = get_staff(db, staff_id, organisation_id)
     if not staff:
         return RedirectResponse(url=request.headers.get("referer", f"/resources/{resource_id}"), status_code=303)
     assign_staff_to_resource(db, resource, staff, user, request)
@@ -127,6 +130,7 @@ def resources_remove_staff(
     resource_id: int,
     user: ControllerUser,
     db: Session = Depends(get_db),
+    organisation_id: int = Depends(require_organisation),
     staff_id: int = Form(...),
     csrf_token: str | None = Form(None),
 ):
@@ -134,7 +138,7 @@ def resources_remove_staff(
     resource = get_resource_with_details(db, resource_id)
     if not resource:
         return RedirectResponse(url="/", status_code=303)
-    staff = get_staff(db, staff_id)
+    staff = get_staff(db, staff_id, organisation_id)
     if not staff:
         return RedirectResponse(url=request.headers.get("referer", f"/resources/{resource_id}"), status_code=303)
     remove_staff_from_resource(db, resource, staff, user, request)

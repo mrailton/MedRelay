@@ -3,19 +3,23 @@ from app.db.models.event import Event
 from app.db.models.incident import Incident
 from app.db.models.incident_note import IncidentNote
 from app.db.models.incident_resource import incident_resource
+from app.db.models.organisation import Organisation
 from app.db.models.resource import Resource
 from app.db.models.resource_staff import resource_staff
 from app.db.models.staff import Staff
 from app.db.models.user import User
+from app.db.models.user_organisation import user_organisation
 
 __all__ = [
     "AuditLog",
     "Event",
     "Incident",
     "IncidentNote",
+    "Organisation",
     "Resource",
     "Staff",
     "User",
     "incident_resource",
     "resource_staff",
+    "user_organisation",
 ]

@@ -9,9 +9,10 @@ from app.repositories import Staff, User
 from app.repositories.staff import StaffRepository
 
 
-def create_staff(db: Session, data: dict, user: User, request: Request | None = None) -> Staff:
+def create_staff(db: Session, data: dict, user: User, request: Request | None = None, organisation_id: int | None = None) -> Staff:
     repo = StaffRepository(db)
     staff = repo.create(
+        organisation_id=data.get("organisation_id", organisation_id),
         first_name=data["first_name"],
         last_name=data["last_name"],
         clinical_level=data["clinical_level"],
@@ -38,13 +39,13 @@ def create_staff(db: Session, data: dict, user: User, request: Request | None = 
     return staff
 
 
-def list_staff(db: Session) -> list[Staff]:
-    return StaffRepository(db).list_all()
+def list_staff(db: Session, organisation_id: int | None = None) -> list[Staff]:
+    return StaffRepository(db).list_all(organisation_id)
 
 
-def list_staff_by_last_name(db: Session) -> list[Staff]:
-    return StaffRepository(db).list_all_by_last_name()
+def list_staff_by_last_name(db: Session, organisation_id: int | None = None) -> list[Staff]:
+    return StaffRepository(db).list_all_by_last_name(organisation_id)
 
 
-def get_staff(db: Session, staff_id: int) -> Staff | None:
-    return StaffRepository(db).get(staff_id)
+def get_staff(db: Session, staff_id: int, organisation_id: int | None = None) -> Staff | None:
+    return StaffRepository(db).get(staff_id, organisation_id)

@@ -20,7 +20,7 @@ from app.db.base import Base
 from app.db.session import engine as module_engine
 from app.main import app
 from app.repositories.session import get_db
-from tests.factories import create_user
+from tests.factories import create_organisation, create_user
 
 # Use plaintext passwords in tests — bcrypt with 12 rounds is 200ms+ per hash
 _security.pwd_context = CryptContext(schemes=["plaintext"])
@@ -77,13 +77,18 @@ def client(db_engine, db_session):
 
 
 @pytest.fixture
-def admin_user(db_session):
-    return create_user(db_session, role="ADMIN")
+def organisation(db_session):
+    return create_organisation(db_session, code="testorg", name="Test Organisation")
 
 
 @pytest.fixture
-def controller_user(db_session):
-    return create_user(db_session, role="CONTROLLER")
+def admin_user(db_session, organisation):
+    return create_user(db_session, role="ADMIN", organisation=organisation)
+
+
+@pytest.fixture
+def controller_user(db_session, organisation):
+    return create_user(db_session, role="CONTROLLER", organisation=organisation)
 
 
 @pytest.fixture(autouse=True)
@@ -93,10 +98,10 @@ def _dispose_module_engine():
 
 
 @pytest.fixture
-def auth_client(client, controller_user):
+def auth_client(client, controller_user, organisation):
     client.post(
         "/login",
-        data={"email": controller_user.email, "password": "password", "csrf_token": "test"},
+        data={"organisation_code": organisation.code, "email": controller_user.email, "password": "password", "csrf_token": "test"},
         follow_redirects=False,
     )
     return client

@@ -20,6 +20,15 @@ def create_user(db: Session, data: dict, actor: User, request: Request | None = 
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
+
+    organisation_ids = data.get("organisation_ids")
+    if organisation_ids:
+        from app.repositories.organisation import OrganisationRepository
+
+        orgs = [o for oid in organisation_ids if (o := OrganisationRepository(db).get(oid))]
+        user.organisations.extend(orgs)
+        db.flush()
+
     from app.services.audit import write_audit_log
 
     write_audit_log(
@@ -40,3 +49,7 @@ def list_users(db: Session) -> list[User]:
 
 def get_user_by_email(db: Session, email: str) -> User | None:
     return UserRepository(db).get_by_email(email)
+
+
+def get_user_by_email_and_organisation(db: Session, email: str, organisation_id: int) -> User | None:
+    return UserRepository(db).get_by_email_and_organisation(email, organisation_id)

@@ -19,6 +19,19 @@ class UserRepository(BaseRepository):
 
         return self.db.query(User).filter(User.email == email).first()
 
+    def get_by_email_and_organisation(self, email: str, organisation_id: int) -> User | None:
+        from app.db.models.organisation import Organisation
+        from app.db.models.user import User
+        from app.db.models.user_organisation import user_organisation
+
+        return (
+            self.db.query(User)
+            .join(user_organisation)
+            .join(Organisation)
+            .filter(User.email == email, Organisation.id == organisation_id)
+            .first()
+        )
+
     def list_all(self) -> list[User]:
         from app.db.models.user import User
 

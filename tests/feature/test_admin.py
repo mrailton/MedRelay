@@ -3,17 +3,17 @@ import re
 from tests.factories import create_user
 
 
-def _login_as_admin(client, db_session):
-    user = create_user(db_session, role="ADMIN", email="admin@example.com")
+def _login_as_admin(client, db_session, organisation):
+    user = create_user(db_session, role="ADMIN", email="admin@example.com", organisation=organisation)
     csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
-    client.post("/login", data={"email": user.email, "password": "password", "csrf_token": csrf})
+    client.post("/login", data={"organisation_code": organisation.code, "email": user.email, "password": "password", "csrf_token": csrf})
     return user
 
 
-def _login(client, db_session):
-    user = create_user(db_session)
+def _login(client, db_session, organisation):
+    user = create_user(db_session, organisation=organisation)
     csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
-    client.post("/login", data={"email": user.email, "password": "password", "csrf_token": csrf})
+    client.post("/login", data={"organisation_code": organisation.code, "email": user.email, "password": "password", "csrf_token": csrf})
     return user
 
 
@@ -21,26 +21,26 @@ def _csrf(client):
     return re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
 
 
-def test_admin_users_index_requires_admin(client, db_session):
-    _login(client, db_session)
+def test_admin_users_index_requires_admin(client, db_session, organisation):
+    _login(client, db_session, organisation)
     response = client.get("/admin/users", follow_redirects=False)
     assert response.status_code == 403
 
 
-def test_admin_users_index(client, db_session):
-    _login_as_admin(client, db_session)
+def test_admin_users_index(client, db_session, organisation):
+    _login_as_admin(client, db_session, organisation)
     response = client.get("/admin/users")
     assert response.status_code == 200
 
 
-def test_admin_users_create_get(client, db_session):
-    _login_as_admin(client, db_session)
+def test_admin_users_create_get(client, db_session, organisation):
+    _login_as_admin(client, db_session, organisation)
     response = client.get("/admin/users/create")
     assert response.status_code == 200
 
 
-def test_admin_users_store(client, db_session):
-    _login_as_admin(client, db_session)
+def test_admin_users_store(client, db_session, organisation):
+    _login_as_admin(client, db_session, organisation)
     csrf = _csrf(client)
     response = client.post(
         "/admin/users",
@@ -58,8 +58,8 @@ def test_admin_users_store(client, db_session):
     assert response.headers["location"] == "/admin/users"
 
 
-def test_admin_users_store_password_mismatch(client, db_session):
-    _login_as_admin(client, db_session)
+def test_admin_users_store_password_mismatch(client, db_session, organisation):
+    _login_as_admin(client, db_session, organisation)
     csrf = _csrf(client)
     response = client.post(
         "/admin/users",
@@ -77,8 +77,8 @@ def test_admin_users_store_password_mismatch(client, db_session):
     assert "Create User" in response.text
 
 
-def test_admin_users_store_short_password(client, db_session):
-    _login_as_admin(client, db_session)
+def test_admin_users_store_short_password(client, db_session, organisation):
+    _login_as_admin(client, db_session, organisation)
     csrf = _csrf(client)
     response = client.post(
         "/admin/users",
@@ -95,10 +95,10 @@ def test_admin_users_store_short_password(client, db_session):
     assert "Create User" in response.text
 
 
-def test_admin_users_store_duplicate_email(client, db_session):
-    create_user(db_session, role="ADMIN", email="dup@example.com")
+def test_admin_users_store_duplicate_email(client, db_session, organisation):
+    create_user(db_session, role="ADMIN", email="dup@example.com", organisation=organisation)
     db_session.commit()
-    _login_as_admin(client, db_session)
+    _login_as_admin(client, db_session, organisation)
     csrf = _csrf(client)
     response = client.post(
         "/admin/users",
@@ -115,7 +115,7 @@ def test_admin_users_store_duplicate_email(client, db_session):
     assert "Email already exists" in response.text
 
 
-def test_admin_audit_logs(client, db_session):
-    _login_as_admin(client, db_session)
+def test_admin_audit_logs(client, db_session, organisation):
+    _login_as_admin(client, db_session, organisation)
     response = client.get("/admin/audit-logs")
     assert response.status_code == 200

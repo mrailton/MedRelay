@@ -20,10 +20,10 @@ from app.services.resources import (
 from tests.factories import create_event, create_user
 
 
-def _login(client, db_session):
-    user = create_user(db_session)
+def _login(client, db_session, organisation):
+    user = create_user(db_session, organisation=organisation)
     csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
-    client.post("/login", data={"email": user.email, "password": "password", "csrf_token": csrf})
+    client.post("/login", data={"organisation_code": organisation.code, "email": user.email, "password": "password", "csrf_token": csrf})
     return user
 
 
@@ -34,16 +34,16 @@ def _csrf(client):
 # -- HTTP route tests ---------------------------------------------------------
 
 
-def test_resources_index(client, db_session):
-    _login(client, db_session)
-    event = create_event(db_session)
+def test_resources_index(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    event = create_event(db_session, organisation=organisation)
     response = client.get(f"/events/{event.id}/resources")
     assert response.status_code == 200
 
 
-def test_resources_store_creates_resource(client, db_session):
-    _login(client, db_session)
-    event = create_event(db_session)
+def test_resources_store_creates_resource(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    event = create_event(db_session, organisation=organisation)
     csrf = _csrf(client)
     response = client.post(
         f"/events/{event.id}/resources",
@@ -58,10 +58,10 @@ def test_resources_store_creates_resource(client, db_session):
     assert resource.status == ResourceStatus.AVAILABLE.value
 
 
-def test_resources_store_with_staff(client, db_session):
-    _login(client, db_session)
-    event = create_event(db_session)
-    staff = StaffRepository(db_session).create(first_name="John", last_name="Doe", clinical_level="EMT")
+def test_resources_store_with_staff(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    event = create_event(db_session, organisation=organisation)
+    staff = StaffRepository(db_session).create(first_name="John", last_name="Doe", clinical_level="EMT", organisation_id=organisation.id)
     db_session.commit()
     csrf = _csrf(client)
     response = client.post(
@@ -76,9 +76,9 @@ def test_resources_store_with_staff(client, db_session):
     assert resource.staff[0].id == staff.id
 
 
-def test_resources_show(client, db_session):
-    _login(client, db_session)
-    event = create_event(db_session)
+def test_resources_show(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    event = create_event(db_session, organisation=organisation)
     resource = ResourceRepository(db_session).create(event_id=event.id, name="Unit-1", resource_type="AMBULANCE")
     db_session.commit()
     response = client.get(f"/resources/{resource.id}")
@@ -86,21 +86,21 @@ def test_resources_show(client, db_session):
     assert "Unit-1" in response.text
 
 
-def test_resources_show_404_redirect(client, db_session):
-    _login(client, db_session)
+def test_resources_show_404_redirect(client, db_session, organisation):
+    _login(client, db_session, organisation)
     response = client.get("/resources/9999", follow_redirects=False)
     assert response.status_code == 303
 
 
-def test_resources_requires_auth(client, db_session):
+def test_resources_requires_auth(client, db_session, organisation):
     response = client.get("/resources/1", follow_redirects=False)
     assert response.status_code == 303
     assert response.headers["location"] == "/login"
 
 
-def test_resources_update_status(client, db_session):
-    _login(client, db_session)
-    event = create_event(db_session)
+def test_resources_update_status(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    event = create_event(db_session, organisation=organisation)
     resource = ResourceRepository(db_session).create(event_id=event.id, name="Unit-1", resource_type="AMBULANCE")
     db_session.commit()
     csrf = _csrf(client)
@@ -114,11 +114,11 @@ def test_resources_update_status(client, db_session):
     assert resource.status == ResourceStatus.EN_ROUTE.value
 
 
-def test_resources_assign_staff(client, db_session):
-    _login(client, db_session)
-    event = create_event(db_session)
+def test_resources_assign_staff(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    event = create_event(db_session, organisation=organisation)
     resource = ResourceRepository(db_session).create(event_id=event.id, name="Unit-1", resource_type="AMBULANCE")
-    staff = StaffRepository(db_session).create(first_name="Jane", last_name="Smith", clinical_level="PARAMEDIC")
+    staff = StaffRepository(db_session).create(first_name="Jane", last_name="Smith", clinical_level="PARAMEDIC", organisation_id=organisation.id)
     db_session.commit()
     csrf = _csrf(client)
     response = client.post(
@@ -132,12 +132,12 @@ def test_resources_assign_staff(client, db_session):
     assert resource.staff[0].id == staff.id
 
 
-def test_resources_remove_staff(client, db_session):
-    _login(client, db_session)
-    event = create_event(db_session)
-    staff = StaffRepository(db_session).create(first_name="Jack", last_name="Brown", clinical_level="EMT")
+def test_resources_remove_staff(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    event = create_event(db_session, organisation=organisation)
+    staff = StaffRepository(db_session).create(first_name="Jack", last_name="Brown", clinical_level="EMT", organisation_id=organisation.id)
     resource = ResourceRepository(db_session).create(event_id=event.id, name="Unit-1", resource_type="AMBULANCE")
-    resource = assign_staff_to_resource(db_session, resource, staff, _login(client, db_session))
+    resource = assign_staff_to_resource(db_session, resource, staff, _login(client, db_session, organisation))
     db_session.commit()
     csrf = _csrf(client)
     response = client.post(
@@ -153,8 +153,8 @@ def test_resources_remove_staff(client, db_session):
 # -- Service-level tests ------------------------------------------------------
 
 
-def test_create_resource_service(db_session):
-    event = create_event(db_session)
+def test_create_resource_service(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     resource = create_resource(
         db_session,
@@ -169,10 +169,10 @@ def test_create_resource_service(db_session):
     assert log is not None
 
 
-def test_create_resource_with_staff_service(db_session):
-    event = create_event(db_session)
+def test_create_resource_with_staff_service(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
-    staff = StaffRepository(db_session).create(first_name="John", last_name="Doe", clinical_level="PARAMEDIC")
+    staff = StaffRepository(db_session).create(first_name="John", last_name="Doe", clinical_level="PARAMEDIC", organisation_id=organisation.id)
     db_session.commit()
     resource = create_resource(
         db_session,
@@ -185,8 +185,8 @@ def test_create_resource_with_staff_service(db_session):
     assert resource.highest_clinical_level is not None
 
 
-def test_update_resource_status_service(db_session):
-    event = create_event(db_session)
+def test_update_resource_status_service(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     resource = create_resource(db_session, event, {"name": "Unit-1", "resource_type": "AMBULANCE"}, user)
     db_session.commit()
@@ -198,11 +198,11 @@ def test_update_resource_status_service(db_session):
     assert log.after["status"] == ResourceStatus.ON_SCENE.value
 
 
-def test_assign_staff_to_resource_service(db_session):
-    event = create_event(db_session)
+def test_assign_staff_to_resource_service(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     resource = create_resource(db_session, event, {"name": "Unit-1", "resource_type": "AMBULANCE"}, user)
-    staff = StaffRepository(db_session).create(first_name="Jane", last_name="Smith", clinical_level="EMT")
+    staff = StaffRepository(db_session).create(first_name="Jane", last_name="Smith", clinical_level="EMT", organisation_id=organisation.id)
     db_session.commit()
     result = assign_staff_to_resource(db_session, resource, staff, user)
     assert staff in result.staff
@@ -210,22 +210,22 @@ def test_assign_staff_to_resource_service(db_session):
     assert log is not None
 
 
-def test_assign_same_staff_twice_is_idempotent(db_session):
-    event = create_event(db_session)
+def test_assign_same_staff_twice_is_idempotent(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     resource = create_resource(db_session, event, {"name": "Unit-1", "resource_type": "AMBULANCE"}, user)
-    staff = StaffRepository(db_session).create(first_name="Jane", last_name="Smith", clinical_level="EMT")
+    staff = StaffRepository(db_session).create(first_name="Jane", last_name="Smith", clinical_level="EMT", organisation_id=organisation.id)
     db_session.commit()
     assign_staff_to_resource(db_session, resource, staff, user)
     assign_staff_to_resource(db_session, resource, staff, user)
     assert resource.staff.count(staff) == 1
 
 
-def test_remove_staff_from_resource_service(db_session):
-    event = create_event(db_session)
+def test_remove_staff_from_resource_service(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     resource = create_resource(db_session, event, {"name": "Unit-1", "resource_type": "AMBULANCE"}, user)
-    staff = StaffRepository(db_session).create(first_name="Jill", last_name="Jones", clinical_level="EMT")
+    staff = StaffRepository(db_session).create(first_name="Jill", last_name="Jones", clinical_level="EMT", organisation_id=organisation.id)
     db_session.commit()
     assign_staff_to_resource(db_session, resource, staff, user)
     result = remove_staff_from_resource(db_session, resource, staff, user)
@@ -234,8 +234,8 @@ def test_remove_staff_from_resource_service(db_session):
     assert log is not None
 
 
-def test_get_resource_service(db_session):
-    event = create_event(db_session)
+def test_get_resource_service(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     resource = create_resource(db_session, event, {"name": "Unit-1", "resource_type": "AMBULANCE"}, user)
     db_session.commit()
@@ -243,16 +243,16 @@ def test_get_resource_service(db_session):
     assert get_resource(db_session, 9999) is None
 
 
-def test_get_resource_with_details_service(db_session):
-    event = create_event(db_session)
+def test_get_resource_with_details_service(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     resource = create_resource(db_session, event, {"name": "Unit-1", "resource_type": "AMBULANCE"}, user)
     db_session.commit()
     assert get_resource_with_details(db_session, resource.id) is not None
 
 
-def test_list_resources_by_event(db_session):
-    event = create_event(db_session)
+def test_list_resources_by_event(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     create_resource(db_session, event, {"name": "A", "resource_type": "AMBULANCE"}, user)
     create_resource(db_session, event, {"name": "B", "resource_type": "AMBULANCE"}, user)
@@ -260,16 +260,16 @@ def test_list_resources_by_event(db_session):
     assert len(list_resources_by_event(db_session, event.id)) == 2
 
 
-def test_count_resources_by_event(db_session):
-    event = create_event(db_session)
+def test_count_resources_by_event(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     create_resource(db_session, event, {"name": "A", "resource_type": "AMBULANCE"}, user)
     db_session.commit()
     assert count_resources_by_event(db_session, event.id) == 1
 
 
-def test_count_available_resources(db_session):
-    event = create_event(db_session)
+def test_count_available_resources(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     create_resource(db_session, event, {"name": "A", "resource_type": "AMBULANCE"}, user)
     db_session.commit()
@@ -278,8 +278,8 @@ def test_count_available_resources(db_session):
     assert count_available_resources_by_event(db_session, event.id) == 0
 
 
-def test_count_deployed_resources(db_session):
-    event = create_event(db_session)
+def test_count_deployed_resources(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     create_resource(db_session, event, {"name": "A", "resource_type": "AMBULANCE"}, user)
     db_session.commit()
@@ -288,8 +288,8 @@ def test_count_deployed_resources(db_session):
     assert count_deployed_resources_by_event(db_session, event.id) == 1
 
 
-def test_count_out_of_service_resources(db_session):
-    event = create_event(db_session)
+def test_count_out_of_service_resources(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     create_resource(db_session, event, {"name": "A", "resource_type": "AMBULANCE"}, user)
     db_session.commit()

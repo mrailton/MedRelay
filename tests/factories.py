@@ -4,8 +4,27 @@ from sqlalchemy.orm import Session
 
 from app.db.models.event import Event
 from app.db.models.incident import Incident
+from app.db.models.organisation import Organisation
 from app.db.models.user import User
 from app.security import hash_password
+
+
+def create_organisation(
+    db: Session,
+    *,
+    code: str = "default",
+    name: str = "Default Organisation",
+) -> Organisation:
+    org = Organisation(
+        code=code,
+        name=name,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+    return org
 
 
 def create_user(
@@ -14,6 +33,7 @@ def create_user(
     role: str = "CONTROLLER",
     email: str | None = None,
     password: str = "password",
+    organisation: Organisation | None = None,
 ) -> User:
     user = User(
         name="Test User",
@@ -24,13 +44,18 @@ def create_user(
         updated_at=datetime.now(UTC),
     )
     db.add(user)
+    db.flush()
+    if organisation:
+        user.organisations.append(organisation)
+        db.flush()
     db.commit()
     db.refresh(user)
     return user
 
 
-def create_event(db: Session, **kwargs) -> Event:
+def create_event(db: Session, organisation: Organisation, **kwargs) -> Event:
     event = Event(
+        organisation_id=organisation.id,
         name=kwargs.get("name", "Test Event"),
         location=kwargs.get("location", "Test Location"),
         start_time=kwargs.get("start_time", datetime.now(UTC)),

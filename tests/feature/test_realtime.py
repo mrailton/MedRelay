@@ -8,8 +8,8 @@ def test_incident_channel_name():
     assert realtime_hub.incident_channel(5) == "event.5.incidents"
 
 
-def test_publish_payload_shape(db_session):
-    event = create_event(db_session)
+def test_publish_payload_shape(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     incident = make_incident(db_session, event)
     payload = {"incident": incident_to_dict(incident)}
     assert "incident" in payload

@@ -6,7 +6,10 @@
             </svg>
         </label>
     </div>
-    <div class="flex-1"><span class="text-lg font-semibold">MedRelay CAD</span></div>
+    <div class="flex-1 flex items-center gap-2">
+        <span class="text-lg font-semibold">MedRelay CAD</span>
+        <span class="badge badge-outline text-xs">{{ request.session.get('organisation_code', '') }}</span>
+    </div>
     <div class="flex-none gap-2">
         {% if user.is_admin() %}<span class="badge badge-warning">ADMIN</span>{% endif %}
         <span class="text-sm">{{ user.name }}</span>

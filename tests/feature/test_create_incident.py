@@ -3,8 +3,8 @@ from app.services.incidents import create_incident
 from tests.factories import create_event, create_user
 
 
-def test_create_incident_action_creates_incident_and_audit_log(db_session):
-    event = create_event(db_session)
+def test_create_incident_action_creates_incident_and_audit_log(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
 
     incident = create_incident(

@@ -8,8 +8,11 @@
             <p class="text-base-content/60 mb-4">Sign in to your account</p>
             <form method="POST" action="{{ url_for('login') }}" class="space-y-4">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label class="fieldset-label">Organisation Code</label>
+                <input type="text" name="organisation_code" value="{{ organisation_code or '' }}" class="input input-bordered w-full" required autofocus />
+                {% if errors.get('organisation_code') %}<span class="text-error text-sm">{{ errors.organisation_code }}</span>{% endif %}
                 <label class="fieldset-label">Email</label>
-                <input type="email" name="email" value="{{ email or '' }}" class="input input-bordered w-full" required autofocus />
+                <input type="email" name="email" value="{{ email or '' }}" class="input input-bordered w-full" required />
                 {% if errors.get('email') %}<span class="text-error text-sm">{{ errors.email }}</span>{% endif %}
                 <label class="fieldset-label">Password</label>
                 <input type="password" name="password" class="input input-bordered w-full" required />

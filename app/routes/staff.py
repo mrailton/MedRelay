@@ -7,7 +7,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app import policies
-from app.dependencies import ControllerUser, CurrentUser, verify_csrf
+from app.dependencies import ControllerUser, CurrentUser, require_organisation, verify_csrf
 from app.repositories.session import get_db
 from app.services.staff import create_staff, list_staff
 from app.templating import render
@@ -19,8 +19,8 @@ router = APIRouter(prefix="/staff", tags=["staff"])
 
 
 @router.get("", name="staff.index")
-def staff_index(request: Request, user: CurrentUser, db: Session = Depends(get_db)):
-    staff_list = list_staff(db)
+def staff_index(request: Request, user: CurrentUser, db: Session = Depends(get_db), organisation_id: int = Depends(require_organisation)):
+    staff_list = list_staff(db, organisation_id)
     return render(request, "staff/index.html", {"staff_list": staff_list}, user=user)
 
 
@@ -36,6 +36,7 @@ def staff_store(
     request: Request,
     user: ControllerUser,
     db: Session = Depends(get_db),
+    organisation_id: int = Depends(require_organisation),
     first_name: str = Form(...),
     last_name: str = Form(...),
     clinical_level: str = Form(...),
@@ -46,6 +47,7 @@ def staff_store(
     create_staff(
         db,
         {
+            "organisation_id": organisation_id,
             "first_name": first_name,
             "last_name": last_name,
             "clinical_level": clinical_level,

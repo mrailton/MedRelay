@@ -31,9 +31,15 @@ def require_auth(user: User | None = Depends(get_session_user)) -> User:
         raise LoginRequired()
     return user
 
+def get_current_organisation_id(request: Request) -> int | None:
+    return request.session.get("organisation_id")
 
-def require_guest(user: User | None = Depends(get_session_user)) -> None:
-    if user is not None:
+
+def require_guest(
+    user: User | None = Depends(get_session_user),
+    org_id: int | None = Depends(get_current_organisation_id),
+) -> None:
+    if user is not None and org_id is not None:
         raise HTTPException(
             status_code=status.HTTP_303_SEE_OTHER,
             headers={"Location": "/"},
@@ -55,6 +61,23 @@ def require_controller(user: User = Depends(require_auth)) -> User:
 CurrentUser = Annotated[User, Depends(require_auth)]
 ControllerUser = Annotated[User, Depends(require_controller)]
 AdminUser = Annotated[User, Depends(require_admin)]
+
+
+
+def require_organisation(org_id: int | None = Depends(get_current_organisation_id)) -> int:
+    if org_id is None:
+        raise LoginRequired()
+    return org_id
+
+
+CurrentOrg = Annotated[int, Depends(require_organisation)]
+
+
+def get_current_organisation_code(request: Request) -> str | None:
+    return request.session.get("organisation_code")
+
+
+CurrentOrgCode = Annotated[str | None, Depends(get_current_organisation_code)]
 
 
 def get_csrf_token(request: Request) -> str:

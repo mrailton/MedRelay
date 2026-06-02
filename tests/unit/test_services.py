@@ -7,13 +7,18 @@ from app.services.events import create_event as create_event_svc
 from app.services.events import get_event, list_active_events, list_events, update_event
 from app.services.users import create_user as create_user_svc
 from app.services.users import get_user_by_email, list_users
-from tests.factories import create_event, create_user
+from tests.factories import create_event, create_organisation, create_user
+
+
+def _make_org(db_session):
+    return create_organisation(db_session, code="test")
 
 # -- Audit service tests ------------------------------------------------------
 
 
 def test_write_audit_log(db_session):
-    user = create_user(db_session)
+    org = _make_org(db_session)
+    user = create_user(db_session, organisation=org)
     write_audit_log(
         db_session,
         action="test.action",
@@ -32,7 +37,8 @@ def test_write_audit_log(db_session):
 
 
 def test_list_audit_logs_for_entity(db_session):
-    user = create_user(db_session)
+    org = _make_org(db_session)
+    user = create_user(db_session, organisation=org)
     for i in range(3):
         write_audit_log(db_session, action=f"test.{i}", entity_type="test", entity_id="e1", user=user)
     db_session.commit()
@@ -41,7 +47,8 @@ def test_list_audit_logs_for_entity(db_session):
 
 
 def test_list_audit_logs_paginated(db_session):
-    user = create_user(db_session)
+    org = _make_org(db_session)
+    user = create_user(db_session, organisation=org)
     for i in range(5):
         write_audit_log(db_session, action=f"test.{i}", entity_type="test", entity_id=str(i), user=user)
     db_session.commit()
@@ -52,7 +59,8 @@ def test_list_audit_logs_paginated(db_session):
 
 
 def test_count_audit_logs(db_session):
-    user = create_user(db_session)
+    org = _make_org(db_session)
+    user = create_user(db_session, organisation=org)
     assert count_audit_logs(db_session) == 0
     write_audit_log(db_session, action="test", entity_type="test", entity_id="1", user=user)
     db_session.commit()
@@ -63,10 +71,12 @@ def test_count_audit_logs(db_session):
 
 
 def test_create_event_service(db_session):
-    user = create_user(db_session)
+    org = _make_org(db_session)
+    user = create_user(db_session, organisation=org)
     event = create_event_svc(
         db_session,
         {
+            "organisation_id": org.id,
             "name": "Test Event",
             "location": "Test Location",
             "start_time": datetime.now(UTC),
@@ -82,8 +92,9 @@ def test_create_event_service(db_session):
 
 
 def test_update_event_service(db_session):
-    user = create_user(db_session)
-    event = create_event(db_session)
+    org = _make_org(db_session)
+    user = create_user(db_session, organisation=org)
+    event = create_event(db_session, organisation=org)
     updated = update_event(
         db_session,
         event,
@@ -98,8 +109,9 @@ def test_update_event_service(db_session):
 
 
 def test_update_event_partial(db_session):
-    user = create_user(db_session)
-    event = create_event(db_session)
+    org = _make_org(db_session)
+    user = create_user(db_session, organisation=org)
+    event = create_event(db_session, organisation=org)
     updated = update_event(
         db_session,
         event,
@@ -112,20 +124,23 @@ def test_update_event_partial(db_session):
 
 
 def test_get_event_service(db_session):
-    event = create_event(db_session)
+    org = _make_org(db_session)
+    event = create_event(db_session, organisation=org)
     assert get_event(db_session, event.id) is not None
     assert get_event(db_session, 9999) is None
 
 
 def test_list_events(db_session):
-    create_event(db_session, name="A")
-    create_event(db_session, name="B")
+    org = _make_org(db_session)
+    create_event(db_session, organisation=org, name="A")
+    create_event(db_session, organisation=org, name="B")
     assert len(list_events(db_session)) == 2
 
 
 def test_list_active_events(db_session):
-    create_event(db_session, name="Active", is_active=True)
-    create_event(db_session, name="Inactive", is_active=False)
+    org = _make_org(db_session)
+    create_event(db_session, organisation=org, name="Active", is_active=True)
+    create_event(db_session, organisation=org, name="Inactive", is_active=False)
     active = list_active_events(db_session)
     assert len(active) == 1
     assert active[0].name == "Active"
@@ -135,7 +150,8 @@ def test_list_active_events(db_session):
 
 
 def test_create_user_service(db_session):
-    actor = create_user(db_session, role="ADMIN")
+    org = _make_org(db_session)
+    actor = create_user(db_session, role="ADMIN", organisation=org)
     user = create_user_svc(
         db_session,
         {"name": "New User", "email": "new@example.com", "password": "secret", "role": "CONTROLLER"},
@@ -149,13 +165,15 @@ def test_create_user_service(db_session):
 
 
 def test_list_users(db_session):
-    create_user(db_session)
-    create_user(db_session, email="other@example.com")
+    org = _make_org(db_session)
+    create_user(db_session, organisation=org)
+    create_user(db_session, email="other@example.com", organisation=org)
     assert len(list_users(db_session)) == 2
 
 
 def test_get_user_by_email(db_session):
-    created = create_user(db_session, email="findme@example.com")
+    org = _make_org(db_session)
+    created = create_user(db_session, email="findme@example.com", organisation=org)
     found = get_user_by_email(db_session, "findme@example.com")
     assert found is not None
     assert found.id == created.id
@@ -163,8 +181,9 @@ def test_get_user_by_email(db_session):
 
 
 def test_email_exists(db_session):
+    org = _make_org(db_session)
     repo = UserRepository(db_session)
-    create_user(db_session, email="exists@example.com")
+    create_user(db_session, email="exists@example.com", organisation=org)
     db_session.commit()
     assert repo.email_exists("exists@example.com") is True
     assert repo.email_exists("noone@example.com") is False

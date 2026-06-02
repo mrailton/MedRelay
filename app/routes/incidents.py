@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.dependencies import ControllerUser, CurrentUser, verify_csrf
+from app.dependencies import ControllerUser, CurrentUser, require_organisation, verify_csrf
 from app.enums import IncidentStatus
 from app.repositories.session import get_db
 from app.services.audit import list_audit_logs_for_entity
@@ -29,8 +29,8 @@ router = APIRouter(tags=["incidents"])
 
 
 @router.get("/events/{event_id}/incidents", name="events.incidents.index")
-def incidents_index(request: Request, event_id: int, user: CurrentUser, db: Session = Depends(get_db)):
-    event = get_event(db, event_id)
+def incidents_index(request: Request, event_id: int, user: CurrentUser, db: Session = Depends(get_db), organisation_id: int = Depends(require_organisation)):
+    event = get_event(db, event_id, organisation_id)
     incidents = list_incidents_by_event(db, event_id)
     return render(request, "incidents/index.html", {"event": event, "incidents": incidents}, user=user)
 
@@ -41,6 +41,7 @@ def incidents_store(
     event_id: int,
     user: ControllerUser,
     db: Session = Depends(get_db),
+    organisation_id: int = Depends(require_organisation),
     reference: str = Form(...),
     location: str = Form(...),
     priority: str = Form(...),
@@ -49,7 +50,7 @@ def incidents_store(
     csrf_token: str | None = Form(None),
 ):
     verify_csrf(request, csrf_token)
-    event = get_event(db, event_id)
+    event = get_event(db, event_id, organisation_id)
     if not event:
         return RedirectResponse(url="/events", status_code=303)
     incident = create_incident(
@@ -70,7 +71,7 @@ def incidents_store(
 
 
 @router.get("/incidents/{incident_id}", name="incidents.show")
-def incidents_show(request: Request, incident_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+def incidents_show(request: Request, incident_id: int, user: CurrentUser, db: Session = Depends(get_db), organisation_id: int = Depends(require_organisation)):
     incident = get_incident_with_details(db, incident_id)
     if not incident:
         return RedirectResponse(url="/", status_code=303)
@@ -94,6 +95,7 @@ def incidents_update_status(
     incident_id: int,
     user: ControllerUser,
     db: Session = Depends(get_db),
+    organisation_id: int = Depends(require_organisation),
     status: str = Form(...),
     csrf_token: str | None = Form(None),
 ):
@@ -116,6 +118,7 @@ def incidents_assign_resource(
     incident_id: int,
     user: ControllerUser,
     db: Session = Depends(get_db),
+    organisation_id: int = Depends(require_organisation),
     resource_ids: list[int] = Form(default=[]),
     csrf_token: str | None = Form(None),
 ):
@@ -134,6 +137,7 @@ def incidents_notes_store(
     incident_id: int,
     user: ControllerUser,
     db: Session = Depends(get_db),
+    organisation_id: int = Depends(require_organisation),
     content: str = Form(...),
     csrf_token: str | None = Form(None),
 ):

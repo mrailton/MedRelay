@@ -7,9 +7,10 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.dependencies import CurrentUser, get_csrf_token, require_guest, verify_csrf
+from app.repositories.organisation import OrganisationRepository
 from app.repositories.session import get_db
+from app.repositories.user import UserRepository
 from app.security import verify_password
-from app.services.users import get_user_by_email
 from app.templating import render
 
 if TYPE_CHECKING:
@@ -23,6 +24,7 @@ def login(
     request: Request,
     db: Session = Depends(get_db),
     _: None = Depends(require_guest),
+    organisation_code: str | None = Form(None),
     email: str | None = Form(None),
     password: str | None = Form(None),
     remember: bool = Form(False),
@@ -32,16 +34,27 @@ def login(
         return render(request, "auth/login.html", {"errors": {}})
 
     verify_csrf(request, csrf_token)
-    user = get_user_by_email(db, email or "")
+
+    org = OrganisationRepository(db).get_by_code((organisation_code or "").strip())
+    if not org:
+        return render(
+            request,
+            "auth/login.html",
+            {"errors": {"organisation_code": "Invalid organisation code."}, "email": email, "organisation_code": organisation_code},
+        )
+
+    user = UserRepository(db).get_by_email_and_organisation(email or "", org.id)
     if not user or not verify_password(password or "", user.password):
         return render(
             request,
             "auth/login.html",
-            {"errors": {"email": "The provided credentials do not match our records."}, "email": email},
+            {"errors": {"email": "The provided credentials do not match our records."}, "email": email, "organisation_code": organisation_code},
         )
 
     request.session.clear()
     request.session["user_id"] = user.id
+    request.session["organisation_id"] = org.id
+    request.session["organisation_code"] = org.code
     get_csrf_token(request)
     return RedirectResponse(url="/", status_code=303)
 

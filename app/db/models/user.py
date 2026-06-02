@@ -1,10 +1,17 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.db.models.user_organisation import user_organisation
 from app.enums import UserRole
+
+if TYPE_CHECKING:
+    from app.db.models.organisation import Organisation
 
 
 class User(Base):
@@ -19,6 +26,8 @@ class User(Base):
     remember_token: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    organisations: Mapped[list[Organisation]] = relationship(secondary=user_organisation, back_populates="users")
 
     @property
     def user_role(self) -> UserRole:

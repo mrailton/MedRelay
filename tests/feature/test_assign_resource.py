@@ -6,8 +6,8 @@ from app.services.incidents import assign_resource_to_incident
 from tests.factories import create_event, create_user, make_incident
 
 
-def test_assign_resource_syncs_status(db_session):
-    event = create_event(db_session)
+def test_assign_resource_syncs_status(db_session, organisation):
+    event = create_event(db_session, organisation=organisation)
     user = create_user(db_session)
     incident = make_incident(db_session, event)
     resource = Resource(

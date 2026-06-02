@@ -9,22 +9,22 @@ def test_dashboard_requires_auth(client):
     assert response.headers["location"] == "/login"
 
 
-def test_dashboard_ok(client, db_session):
-    user = create_user(db_session)
-    create_event(db_session)
+def test_dashboard_ok(client, db_session, organisation):
+    user = create_user(db_session, organisation=organisation)
+    create_event(db_session, organisation=organisation)
     csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
-    client.post("/login", data={"email": user.email, "password": "password", "csrf_token": csrf})
+    client.post("/login", data={"organisation_code": organisation.code, "email": user.email, "password": "password", "csrf_token": csrf})
     response = client.get("/")
     assert response.status_code == 200
     assert "Dashboard" in response.text
 
 
-def test_dashboard_shows_events(client, db_session):
-    user = create_user(db_session)
-    create_event(db_session, name="Event A")
-    create_event(db_session, name="Event B")
+def test_dashboard_shows_events(client, db_session, organisation):
+    user = create_user(db_session, organisation=organisation)
+    create_event(db_session, name="Event A", organisation=organisation)
+    create_event(db_session, name="Event B", organisation=organisation)
     csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
-    client.post("/login", data={"email": user.email, "password": "password", "csrf_token": csrf})
+    client.post("/login", data={"organisation_code": organisation.code, "email": user.email, "password": "password", "csrf_token": csrf})
     response = client.get("/")
     assert response.status_code == 200
     assert "Event A" in response.text

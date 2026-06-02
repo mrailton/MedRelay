@@ -9,9 +9,10 @@ from app.repositories import Event, User
 from app.repositories.event import EventRepository
 
 
-def create_event(db: Session, data: dict, user: User, request: Request | None = None) -> Event:
+def create_event(db: Session, data: dict, user: User, request: Request | None = None, organisation_id: int | None = None) -> Event:
     repo = EventRepository(db)
     event = repo.create(
+        organisation_id=data.get("organisation_id", organisation_id),
         name=data["name"],
         location=data["location"],
         start_time=data["start_time"],
@@ -72,13 +73,13 @@ def update_event(db: Session, event: Event, data: dict, user: User, request: Req
     return event
 
 
-def get_event(db: Session, event_id: int) -> Event | None:
-    return EventRepository(db).get(event_id)
+def get_event(db: Session, event_id: int, organisation_id: int | None = None) -> Event | None:
+    return EventRepository(db).get(event_id, organisation_id)
 
 
-def list_events(db: Session) -> list[Event]:
-    return EventRepository(db).list_all()
+def list_events(db: Session, organisation_id: int | None = None) -> list[Event]:
+    return EventRepository(db).list_all(organisation_id)
 
 
-def list_active_events(db: Session) -> list[Event]:
-    return EventRepository(db).list_active()
+def list_active_events(db: Session, organisation_id: int | None = None) -> list[Event]:
+    return EventRepository(db).list_active(organisation_id)
