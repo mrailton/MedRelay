@@ -18,6 +18,9 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     register_route_names(list(app.routes))
     yield
+    from app.realtime.hub import realtime_hub
+
+    realtime_hub.clear()
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)

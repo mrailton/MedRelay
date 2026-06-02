@@ -25,6 +25,17 @@ class RealtimeHub:
             if not subs and channel in self._subscribers:
                 del self._subscribers[channel]
 
+    def clear(self) -> None:
+        """Remove all subscribers and drain pending queues for clean shutdown."""
+        for channel, queues in self._subscribers.items():
+            for queue in queues:
+                while not queue.empty():
+                    try:
+                        queue.get_nowait()
+                    except asyncio.QueueEmpty:
+                        break
+        self._subscribers.clear()
+
     def publish_sync(self, channel: str, event: str, data: dict[str, Any]) -> None:
         """Publish from sync code (e.g. after DB commit in services)."""
         message = self._format_sse(event, data)

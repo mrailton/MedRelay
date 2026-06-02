@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from app.db.models.audit_log import AuditLog
 from app.repositories.user import UserRepository
+from app.repositories.staff import StaffRepository
 from app.services.audit import count_audit_logs, list_audit_logs_for_entity, list_audit_logs_paginated, write_audit_log
 from app.services.events import create_event as create_event_svc
 from app.services.events import get_event, list_active_events, list_events, update_event
@@ -66,6 +67,23 @@ def test_count_audit_logs(db_session):
     write_audit_log(db_session, action="test", entity_type="test", entity_id="1", user=user)
     db_session.commit()
     assert count_audit_logs(db_session) == 1
+
+
+def test_config_is_testing():
+    from app.config import get_settings
+
+    settings = get_settings()
+    assert settings.is_testing is True
+
+
+def test_publish_incident_no_db():
+    """_publish_incident handles incident with no db session gracefully."""
+    from app.db.models.incident import Incident
+    from app.services.incidents import _publish_incident
+
+    incident = Incident(id=1, event_id=1)
+    # should not raise
+    _publish_incident(incident)
 
 
 # -- Event service tests ------------------------------------------------------
@@ -179,6 +197,70 @@ def test_get_user_by_email(db_session):
     assert found is not None
     assert found.id == created.id
     assert get_user_by_email(db_session, "nonexistent@example.com") is None
+
+
+def test_staff_repo_list_by_ids_with_org(db_session):
+    from app.repositories.staff import StaffRepository
+
+    org = _make_org(db_session)
+    staff1 = StaffRepository(db_session).create(first_name="A", last_name="B", clinical_level="EMT", organisation_id=org.id)
+    staff2 = StaffRepository(db_session).create(first_name="C", last_name="D", clinical_level="PARAMEDIC", organisation_id=org.id)
+    db_session.commit()
+    result = StaffRepository(db_session).list_by_ids([staff1.id, staff2.id], organisation_id=org.id)
+    assert len(result) == 2
+    result_filtered = StaffRepository(db_session).list_by_ids([staff1.id], organisation_id=9999)
+    assert len(result_filtered) == 0
+
+
+def test_get_user_by_email_and_organisation(db_session):
+    from app.services.users import get_user_by_email_and_organisation
+
+    org = _make_org(db_session)
+    user = create_user(db_session, email="orguser@example.com", organisation=org)
+    db_session.commit()
+    found = get_user_by_email_and_organisation(db_session, "orguser@example.com", org.id)
+    assert found is not None
+    assert found.id == user.id
+    assert get_user_by_email_and_organisation(db_session, "nobody@example.com", org.id) is None
+
+
+def test_create_user_with_missing_org(db_session):
+    from app.services.users import create_user as create_user_svc
+
+    actor = create_user(db_session, role="ADMIN", organisation=_make_org(db_session))
+    # Non-existent org IDs are silently skipped
+    user = create_user_svc(
+        db_session,
+        {"name": "No Org", "email": "noorg@example.com", "password": "secret", "role": "CONTROLLER", "organisation_ids": [9999]},
+        actor,
+    )
+    db_session.commit()
+    assert user.name == "No Org"
+    assert user.email == "noorg@example.com"
+
+
+def test_create_user_with_org_roles(db_session):
+    from app.services.users import create_user as create_user_svc
+
+    org1 = _make_org(db_session)
+    org2 = create_organisation(db_session, code="second", name="Second")
+    actor = create_user(db_session, role="ADMIN", organisation=org1)
+    user = create_user_svc(
+        db_session,
+        {
+            "name": "Multi Org",
+            "email": "multi@example.com",
+            "password": "secret",
+            "role": "CONTROLLER",
+            "organisation_ids": [org1.id, org2.id],
+            "org_roles": {str(org1.id): "ADMIN", str(org2.id): "READ_ONLY"},
+        },
+        actor,
+    )
+    db_session.commit()
+    from app.repositories.organisation import OrganisationRepository
+    assert OrganisationRepository(db_session).get_user_role(user.id, org1.id) == "ADMIN"
+    assert OrganisationRepository(db_session).get_user_role(user.id, org2.id) == "READ_ONLY"
 
 
 def test_email_exists(db_session):

@@ -157,6 +157,8 @@ def assign_resource_to_incident(
 
     if added_ids:
         resource_repo.bulk_update_status(list(added_ids), ResourceStatus.ASSIGNED)
+        if incident.status == IncidentStatus.NEW.value:
+            incident.status = IncidentStatus.DISPATCHED.value
     if removed_ids:
         resource_repo.bulk_update_status(list(removed_ids), ResourceStatus.AVAILABLE)
 

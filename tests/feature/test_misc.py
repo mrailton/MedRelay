@@ -161,3 +161,136 @@ def test_events_update_404(client, db_session, organisation):
         follow_redirects=False,
     )
     assert response.status_code == 303
+
+
+def test_incidents_store_no_event(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    response = client.post(
+        "/events/9999/incidents",
+        data={"location": "X", "priority": "P1", "category": "medical", "description": "Test", "csrf_token": csrf},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert response.headers["location"] == "/events"
+
+
+def test_incidents_update_status_404(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    response = client.post(
+        "/incidents/9999/status",
+        data={"status": "EN_ROUTE", "csrf_token": csrf},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert response.headers["location"] == "/"
+
+
+def test_incidents_assign_resource_404(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    response = client.post(
+        "/incidents/9999/assign-resource",
+        data={"resource_ids": [], "csrf_token": csrf},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+
+
+def test_incidents_notes_store_404(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    response = client.post(
+        "/incidents/9999/notes",
+        data={"content": "Note", "csrf_token": csrf},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+
+
+def test_resources_store_no_event(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    response = client.post(
+        "/events/9999/resources",
+        data={"name": "X", "resource_type": "AMBULANCE", "csrf_token": csrf},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert response.headers["location"] == "/events"
+
+
+def test_resources_update_status_404(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    response = client.post(
+        "/resources/9999/status",
+        data={"status": "EN_ROUTE", "csrf_token": csrf},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+
+
+def test_resources_assign_staff_404(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    response = client.post(
+        "/resources/9999/assign-staff",
+        data={"staff_id": 1, "csrf_token": csrf},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+
+
+def test_resources_assign_staff_not_found(client, db_session, organisation):
+    from app.repositories.resource import ResourceRepository
+    from tests.factories import create_event
+
+    _login(client, db_session, organisation)
+    event = create_event(db_session, organisation=organisation)
+    resource = ResourceRepository(db_session).create(event_id=event.id, name="R1", resource_type="AMBULANCE")
+    db_session.commit()
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    response = client.post(
+        f"/resources/{resource.id}/assign-staff",
+        data={"staff_id": 9999, "csrf_token": csrf},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+
+
+def test_resources_remove_staff_404(client, db_session, organisation):
+    _login(client, db_session, organisation)
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    response = client.post(
+        "/resources/9999/remove-staff",
+        data={"staff_id": 1, "csrf_token": csrf},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+
+
+def test_resources_remove_staff_not_found(client, db_session, organisation):
+    from app.repositories.resource import ResourceRepository
+    from tests.factories import create_event
+
+    _login(client, db_session, organisation)
+    event = create_event(db_session, organisation=organisation)
+    resource = ResourceRepository(db_session).create(event_id=event.id, name="R2", resource_type="AMBULANCE")
+    db_session.commit()
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/login").text).group(1)
+    response = client.post(
+        f"/resources/{resource.id}/remove-staff",
+        data={"staff_id": 9999, "csrf_token": csrf},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+
+
+def test_realtime_events_requires_auth(client, db_session, organisation):
+    response = client.get("/realtime/events?event_id=1", follow_redirects=False)
+    assert response.status_code == 303
+
+
+

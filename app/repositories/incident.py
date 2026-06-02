@@ -59,11 +59,7 @@ class IncidentRepository(BaseRepository):
     def get_next_reference(self, event_id: int) -> str:
         from app.db.models.incident import Incident
 
-        max_ref = (
-            self.db.query(func.max(Incident.reference))
-            .filter(Incident.event_id == event_id)
-            .scalar()
-        )
+        max_ref = self.db.query(func.max(Incident.reference)).filter(Incident.event_id == event_id).scalar()
         seq = (int(max_ref[-5:]) + 1) if max_ref else 1
         return f"{event_id}{seq:05d}"
 
