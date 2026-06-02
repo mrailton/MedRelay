@@ -60,15 +60,21 @@ def user_create() -> None:
             typer.echo("Invalid organisation ID.", err=True)
             raise typer.Exit(1)
 
+        org_role = typer.prompt(
+            f"Role in '{org.code}'",
+            type=click.Choice([r.value for r in UserRole], case_sensitive=False),
+            default=role,
+        ).upper()
+
         user = repo.create(
             name=name,
             email=email,
             password=hash_password(password),
             role=role,
         )
-        user.organisations.append(org)
+        org_repo.add_user(user.id, org.id, org_role)
         db.commit()
-        typer.echo(f"User '{name}' created successfully with role {role} in organisation '{org.code}'.")
+        typer.echo(f"User '{name}' created successfully with role {org_role} in organisation '{org.code}'.")
     finally:
         db.close()
 

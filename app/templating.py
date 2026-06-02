@@ -68,6 +68,8 @@ def render(request: Request, name: str, context: dict | None = None, user=None):
         "csrf_token": get_csrf_token(request),
         "user": user,
         "errors": {},
+        "current_org_id": request.session.get("organisation_id"),
+        "current_org_code": request.session.get("organisation_code"),
     }
     for key in ("success", "error"):
         if key in request.session:

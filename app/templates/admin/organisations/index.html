@@ -1,0 +1,16 @@
+{% extends "layouts/app.html" %}
+{% block title %}Organisations{% endblock %}
+{% block content %}
+<div class="flex justify-between mb-6">
+    <h1 class="text-2xl font-bold">Organisations</h1>
+    <a href="{{ url_for('admin.organisations.create') }}" class="btn btn-primary">New Organisation</a>
+</div>
+<table class="table bg-base-100 shadow-sm">
+    <thead><tr><th>Code</th><th>Name</th><th>Actions</th></tr></thead>
+    <tbody>{% for org in organisations %}<tr>
+        <td>{{ org.code }}</td>
+        <td>{{ org.name }}</td>
+        <td><a href="{{ url_for('admin.organisations.edit', organisation_id=org.id) }}" class="btn btn-ghost btn-xs">Edit</a></td>
+    </tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

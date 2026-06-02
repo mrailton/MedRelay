@@ -4,70 +4,71 @@ from app.enums import UserRole
 from app.repositories import Event, Incident, Resource, Staff, User
 
 
-def _is_controller_or_admin(user: User) -> bool:
-    return user.user_role in (UserRole.ADMIN, UserRole.CONTROLLER)
+def _is_controller_or_admin(user: User, organisation_id: int | None = None) -> bool:
+    role = user.get_role(organisation_id) if organisation_id else user.user_role
+    return role in (UserRole.ADMIN, UserRole.CONTROLLER)
 
 
-def can_view_any_event(user: User) -> bool:
+def can_view_any_event(user: User, organisation_id: int | None = None) -> bool:
     return True
 
 
-def can_create_event(user: User) -> bool:
-    return _is_controller_or_admin(user)
+def can_create_event(user: User, organisation_id: int | None = None) -> bool:
+    return _is_controller_or_admin(user, organisation_id)
 
 
-def can_update_event(user: User, event: Event) -> bool:
-    return _is_controller_or_admin(user)
+def can_update_event(user: User, event: Event, organisation_id: int | None = None) -> bool:
+    return _is_controller_or_admin(user, organisation_id)
 
 
-def can_delete_event(user: User, event: Event) -> bool:
-    return user.user_role == UserRole.ADMIN
+def can_delete_event(user: User, event: Event, organisation_id: int | None = None) -> bool:
+    return user.is_admin(organisation_id)
 
 
-def can_create_incident(user: User) -> bool:
-    return _is_controller_or_admin(user)
+def can_create_incident(user: User, organisation_id: int | None = None) -> bool:
+    return _is_controller_or_admin(user, organisation_id)
 
 
-def can_update_incident(user: User, incident: Incident) -> bool:
-    return _is_controller_or_admin(user)
+def can_update_incident(user: User, incident: Incident, organisation_id: int | None = None) -> bool:
+    return _is_controller_or_admin(user, organisation_id)
 
 
-def can_update_incident_status(user: User, incident: Incident) -> bool:
-    return _is_controller_or_admin(user)
+def can_update_incident_status(user: User, incident: Incident, organisation_id: int | None = None) -> bool:
+    return _is_controller_or_admin(user, organisation_id)
 
 
-def can_assign_resource(user: User, incident: Incident) -> bool:
-    return _is_controller_or_admin(user)
+def can_assign_resource(user: User, incident: Incident, organisation_id: int | None = None) -> bool:
+    return _is_controller_or_admin(user, organisation_id)
 
 
-def can_create_resource(user: User) -> bool:
-    return _is_controller_or_admin(user)
+def can_create_resource(user: User, organisation_id: int | None = None) -> bool:
+    return _is_controller_or_admin(user, organisation_id)
 
 
-def can_update_resource(user: User, resource: Resource) -> bool:
-    return _is_controller_or_admin(user)
+def can_update_resource(user: User, resource: Resource, organisation_id: int | None = None) -> bool:
+    return _is_controller_or_admin(user, organisation_id)
 
 
-def can_create_staff(user: User) -> bool:
-    return _is_controller_or_admin(user)
+def can_create_staff(user: User, organisation_id: int | None = None) -> bool:
+    return _is_controller_or_admin(user, organisation_id)
 
 
-def can_update_staff(user: User, staff: Staff) -> bool:
-    return _is_controller_or_admin(user)
+def can_update_staff(user: User, staff: Staff, organisation_id: int | None = None) -> bool:
+    return _is_controller_or_admin(user, organisation_id)
 
 
-def can_view_any_user(user: User) -> bool:
-    return user.is_admin()
+def can_view_any_user(user: User, organisation_id: int | None = None) -> bool:
+    return user.is_admin(organisation_id)
 
 
-def can_create_user(user: User) -> bool:
-    return user.is_admin()
+def can_create_user(user: User, organisation_id: int | None = None) -> bool:
+    return user.is_admin(organisation_id)
 
 
-def can(user: User, action: str, subject: str | None = None, obj=None) -> bool:
+def can(user: User, action: str, subject: str | None = None, obj=None, *, organisation_id: int | None = None) -> bool:
     """Jinja-friendly policy check mirroring Laravel Gate::authorize patterns."""
     if action == "admin-only":
-        return user.is_admin()
+        return user.is_admin(organisation_id)
 
     mapping: dict[tuple[str, str | None], bool] = {
         ("viewAny", "event"): can_view_any_event(user),

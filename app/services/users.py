@@ -6,11 +6,17 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 
 from app.repositories import User
+from app.repositories.organisation import OrganisationRepository
 from app.repositories.user import UserRepository
 from app.security import hash_password
 
 
-def create_user(db: Session, data: dict, actor: User, request: Request | None = None) -> User:
+def create_user(
+    db: Session,
+    data: dict,
+    actor: User,
+    request: Request | None = None,
+) -> User:
     repo = UserRepository(db)
     user = repo.create(
         name=data["name"],
@@ -21,13 +27,16 @@ def create_user(db: Session, data: dict, actor: User, request: Request | None = 
         updated_at=datetime.now(UTC),
     )
 
-    organisation_ids = data.get("organisation_ids")
-    if organisation_ids:
-        from app.repositories.organisation import OrganisationRepository
+    org_repo = OrganisationRepository(db)
+    organisation_ids = data.get("organisation_ids") or []
+    org_roles = data.get("org_roles") or {}
 
-        orgs = [o for oid in organisation_ids if (o := OrganisationRepository(db).get(oid))]
-        user.organisations.extend(orgs)
-        db.flush()
+    for oid in organisation_ids:
+        org = org_repo.get(oid)
+        if not org:
+            continue
+        role = org_roles.get(str(oid), data["role"])
+        org_repo.add_user(user.id, oid, role)
 
     from app.services.audit import write_audit_log
 

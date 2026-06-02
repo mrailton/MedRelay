@@ -6,8 +6,8 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from app.enums import UserRole
 from app.repositories import User
+from app.repositories.organisation import OrganisationRepository
 from app.repositories.session import get_db
 from app.repositories.user import UserRepository
 
@@ -19,49 +19,8 @@ class LoginRequired(Exception):
 DbSession = Annotated[Session, Depends(get_db)]
 
 
-def get_session_user(request: Request, db: Session = Depends(get_db)) -> User | None:
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return None
-    return UserRepository(db).get(user_id)
-
-
-def require_auth(user: User | None = Depends(get_session_user)) -> User:
-    if user is None:
-        raise LoginRequired()
-    return user
-
 def get_current_organisation_id(request: Request) -> int | None:
     return request.session.get("organisation_id")
-
-
-def require_guest(
-    user: User | None = Depends(get_session_user),
-    org_id: int | None = Depends(get_current_organisation_id),
-) -> None:
-    if user is not None and org_id is not None:
-        raise HTTPException(
-            status_code=status.HTTP_303_SEE_OTHER,
-            headers={"Location": "/"},
-        )
-
-
-def require_admin(user: User = Depends(require_auth)) -> User:
-    if not user.is_admin():
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    return user
-
-
-def require_controller(user: User = Depends(require_auth)) -> User:
-    if user.user_role == UserRole.READ_ONLY:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    return user
-
-
-CurrentUser = Annotated[User, Depends(require_auth)]
-ControllerUser = Annotated[User, Depends(require_controller)]
-AdminUser = Annotated[User, Depends(require_admin)]
-
 
 
 def require_organisation(org_id: int | None = Depends(get_current_organisation_id)) -> int:
@@ -78,6 +37,58 @@ def get_current_organisation_code(request: Request) -> str | None:
 
 
 CurrentOrgCode = Annotated[str | None, Depends(get_current_organisation_code)]
+
+
+def get_session_user(request: Request, db: Session = Depends(get_db)) -> User | None:
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return None
+    return UserRepository(db).get(user_id)
+
+
+def require_auth(user: User | None = Depends(get_session_user)) -> User:
+    if user is None:
+        raise LoginRequired()
+    return user
+
+
+def require_guest(
+    user: User | None = Depends(get_session_user),
+    org_id: int | None = Depends(get_current_organisation_id),
+) -> None:
+    if user is not None and org_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER,
+            headers={"Location": "/"},
+        )
+
+
+def require_admin(user: User = Depends(require_auth), org_id: int = Depends(require_organisation)) -> User:
+    if not user.is_admin(org_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    return user
+
+
+def require_controller(user: User = Depends(require_auth), org_id: int = Depends(require_organisation)) -> User:
+    if user.is_read_only(org_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    return user
+
+
+def require_default_org_admin(
+    user: User = Depends(require_auth),
+    db: Session = Depends(get_db),
+) -> User:
+    default_org = OrganisationRepository(db).get_default()
+    if not default_org or not user.is_admin(default_org.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    return user
+
+
+CurrentUser = Annotated[User, Depends(require_auth)]
+ControllerUser = Annotated[User, Depends(require_controller)]
+AdminUser = Annotated[User, Depends(require_admin)]
+DefaultOrgAdminUser = Annotated[User, Depends(require_default_org_admin)]
 
 
 def get_csrf_token(request: Request) -> str:

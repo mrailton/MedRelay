@@ -5,11 +5,14 @@
         <a href="{{ url_for('dashboard') }}" class="btn btn-ghost justify-start {% if route_is(request, 'dashboard') %}btn-active{% endif %}">Dashboard</a>
         <a href="{{ url_for('events.index') }}" class="btn btn-ghost justify-start {% if route_is(request, 'events') %}btn-active{% endif %}">Events</a>
         <a href="{{ url_for('staff.index') }}" class="btn btn-ghost justify-start {% if route_is(request, 'staff') %}btn-active{% endif %}">Staff</a>
-        {% if can(user, 'viewAny', 'user') %}
+        {% if can(user, 'admin-only', organisation_id=current_org_id) %}
         <div class="divider my-2"></div>
         <span class="text-xs font-semibold opacity-60 px-4">Administration</span>
-        <a href="{{ url_for('admin.users.index') }}" class="btn btn-ghost justify-start">Users</a>
-        <a href="{{ url_for('admin.audit-logs.index') }}" class="btn btn-ghost justify-start">Audit Logs</a>
+        {% if current_org_code == 'default' %}
+        <a href="{{ url_for('admin.organisations.index') }}" class="btn btn-ghost justify-start {% if route_is(request, 'admin.organisations.*') %}btn-active{% endif %}">Organisations</a>
+        {% endif %}
+        <a href="{{ url_for('admin.users.index') }}" class="btn btn-ghost justify-start {% if route_is(request, 'admin.users.*') %}btn-active{% endif %}">Users</a>
+        <a href="{{ url_for('admin.audit-logs.index') }}" class="btn btn-ghost justify-start {% if route_is(request, 'admin.audit-logs.*') %}btn-active{% endif %}">Audit Logs</a>
         {% endif %}
     </aside>
 </div>

@@ -26,3 +26,7 @@ class Organisation(Base):
     users: Mapped[list[User]] = relationship(secondary="user_organisation", back_populates="organisations")
     events: Mapped[list[Event]] = relationship(back_populates="organisation")
     staff_members: Mapped[list[Staff]] = relationship(back_populates="organisation")
+
+    @property
+    def is_default(self) -> bool:
+        return self.code == "default"

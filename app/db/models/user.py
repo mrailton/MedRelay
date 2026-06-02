@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.models.user_organisation import user_organisation
@@ -33,11 +33,34 @@ class User(Base):
     def user_role(self) -> UserRole:
         return UserRole(self.role)
 
-    def is_admin(self) -> bool:
-        return self.user_role == UserRole.ADMIN
+    def is_admin(self, organisation_id: int | None = None) -> bool:
+        if organisation_id is None:
+            return self.user_role == UserRole.ADMIN
+        return self._get_org_role(organisation_id) == UserRole.ADMIN
 
-    def is_controller(self) -> bool:
-        return self.user_role == UserRole.CONTROLLER
+    def is_controller(self, organisation_id: int | None = None) -> bool:
+        if organisation_id is None:
+            return self.user_role == UserRole.CONTROLLER
+        return self._get_org_role(organisation_id) == UserRole.CONTROLLER
 
-    def is_read_only(self) -> bool:
-        return self.user_role == UserRole.READ_ONLY
+    def is_read_only(self, organisation_id: int | None = None) -> bool:
+        if organisation_id is None:
+            return self.user_role == UserRole.READ_ONLY
+        return self._get_org_role(organisation_id) == UserRole.READ_ONLY
+
+    def get_role(self, organisation_id: int) -> UserRole:
+        return self._get_org_role(organisation_id)
+
+    def _get_org_role(self, organisation_id: int) -> UserRole:
+        from sqlalchemy import select
+
+        db = Session.object_session(self)
+        if db is None:
+            return self.user_role
+        result = db.execute(
+            select(user_organisation.c.role).where(
+                user_organisation.c.user_id == self.id,
+                user_organisation.c.organisation_id == organisation_id,
+            )
+        ).scalar()
+        return UserRole(result) if result else self.user_role

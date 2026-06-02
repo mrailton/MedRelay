@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.routes import admin, auth, dashboard, events, health, incidents, realtime, resources, staff
+from app.routes import admin, auth, dashboard, events, health, incidents, organisations, realtime, resources, staff
 
 api_router = APIRouter()
 api_router.include_router(health.router)
@@ -11,4 +11,5 @@ api_router.include_router(incidents.router)
 api_router.include_router(resources.router)
 api_router.include_router(staff.router)
 api_router.include_router(admin.router)
+api_router.include_router(organisations.router)
 api_router.include_router(realtime.router)

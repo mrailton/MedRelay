@@ -13,6 +13,7 @@ from tests.factories import create_event, create_organisation, create_user
 def _make_org(db_session):
     return create_organisation(db_session, code="test")
 
+
 # -- Audit service tests ------------------------------------------------------
 
 

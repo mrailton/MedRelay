@@ -1,6 +1,6 @@
 import re
 
-from tests.factories import create_user
+from tests.factories import create_organisation, create_user
 
 
 def _login_as_admin(client, db_session, organisation):
@@ -27,20 +27,23 @@ def test_admin_users_index_requires_admin(client, db_session, organisation):
     assert response.status_code == 403
 
 
-def test_admin_users_index(client, db_session, organisation):
-    _login_as_admin(client, db_session, organisation)
+def test_admin_users_index(client, db_session):
+    org = create_organisation(db_session, code="default", name="Default Org")
+    _login_as_admin(client, db_session, org)
     response = client.get("/admin/users")
     assert response.status_code == 200
 
 
-def test_admin_users_create_get(client, db_session, organisation):
-    _login_as_admin(client, db_session, organisation)
+def test_admin_users_create_get(client, db_session):
+    org = create_organisation(db_session, code="default", name="Default Org")
+    _login_as_admin(client, db_session, org)
     response = client.get("/admin/users/create")
     assert response.status_code == 200
 
 
-def test_admin_users_store(client, db_session, organisation):
-    _login_as_admin(client, db_session, organisation)
+def test_admin_users_store(client, db_session):
+    org = create_organisation(db_session, code="default", name="Default Org")
+    _login_as_admin(client, db_session, org)
     csrf = _csrf(client)
     response = client.post(
         "/admin/users",
@@ -50,6 +53,8 @@ def test_admin_users_store(client, db_session, organisation):
             "password": "password123",
             "password_confirmation": "password123",
             "role": "ADMIN",
+            "organisation_ids": str(org.id),
+            "org_role": f"{org.id}:ADMIN",
             "csrf_token": csrf,
         },
         follow_redirects=False,
@@ -58,8 +63,9 @@ def test_admin_users_store(client, db_session, organisation):
     assert response.headers["location"] == "/admin/users"
 
 
-def test_admin_users_store_password_mismatch(client, db_session, organisation):
-    _login_as_admin(client, db_session, organisation)
+def test_admin_users_store_password_mismatch(client, db_session):
+    org = create_organisation(db_session, code="default", name="Default Org")
+    _login_as_admin(client, db_session, org)
     csrf = _csrf(client)
     response = client.post(
         "/admin/users",
@@ -69,16 +75,18 @@ def test_admin_users_store_password_mismatch(client, db_session, organisation):
             "password": "password123",
             "password_confirmation": "different",
             "role": "CONTROLLER",
+            "organisation_ids": str(org.id),
+            "org_role": f"{org.id}:CONTROLLER",
             "csrf_token": csrf,
         },
     )
     assert response.status_code == 200
-    # The render call returns the create page with errors; "Create User" is page title
     assert "Create User" in response.text
 
 
-def test_admin_users_store_short_password(client, db_session, organisation):
-    _login_as_admin(client, db_session, organisation)
+def test_admin_users_store_short_password(client, db_session):
+    org = create_organisation(db_session, code="default", name="Default Org")
+    _login_as_admin(client, db_session, org)
     csrf = _csrf(client)
     response = client.post(
         "/admin/users",
@@ -88,6 +96,8 @@ def test_admin_users_store_short_password(client, db_session, organisation):
             "password": "short",
             "password_confirmation": "short",
             "role": "CONTROLLER",
+            "organisation_ids": str(org.id),
+            "org_role": f"{org.id}:CONTROLLER",
             "csrf_token": csrf,
         },
     )
@@ -95,10 +105,11 @@ def test_admin_users_store_short_password(client, db_session, organisation):
     assert "Create User" in response.text
 
 
-def test_admin_users_store_duplicate_email(client, db_session, organisation):
-    create_user(db_session, role="ADMIN", email="dup@example.com", organisation=organisation)
+def test_admin_users_store_duplicate_email(client, db_session):
+    org = create_organisation(db_session, code="default", name="Default Org")
+    create_user(db_session, role="ADMIN", email="dup@example.com", organisation=org)
     db_session.commit()
-    _login_as_admin(client, db_session, organisation)
+    _login_as_admin(client, db_session, org)
     csrf = _csrf(client)
     response = client.post(
         "/admin/users",
@@ -108,6 +119,8 @@ def test_admin_users_store_duplicate_email(client, db_session, organisation):
             "password": "password123",
             "password_confirmation": "password123",
             "role": "CONTROLLER",
+            "organisation_ids": str(org.id),
+            "org_role": f"{org.id}:CONTROLLER",
             "csrf_token": csrf,
         },
     )

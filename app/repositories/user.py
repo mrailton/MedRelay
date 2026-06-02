@@ -24,18 +24,18 @@ class UserRepository(BaseRepository):
         from app.db.models.user import User
         from app.db.models.user_organisation import user_organisation
 
-        return (
-            self.db.query(User)
-            .join(user_organisation)
-            .join(Organisation)
-            .filter(User.email == email, Organisation.id == organisation_id)
-            .first()
-        )
+        return self.db.query(User).join(user_organisation).join(Organisation).filter(User.email == email, Organisation.id == organisation_id).first()
 
     def list_all(self) -> list[User]:
         from app.db.models.user import User
 
         return self.db.query(User).order_by(User.name).all()
+
+    def list_all_by_organisation(self, organisation_id: int) -> list[User]:
+        from app.db.models.user import User
+        from app.db.models.user_organisation import user_organisation
+
+        return self.db.query(User).join(user_organisation).filter(user_organisation.c.organisation_id == organisation_id).order_by(User.name).all()
 
     def create(self, **data: object) -> User:
         from app.db.models.user import User

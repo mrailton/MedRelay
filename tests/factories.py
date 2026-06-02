@@ -6,6 +6,7 @@ from app.db.models.event import Event
 from app.db.models.incident import Incident
 from app.db.models.organisation import Organisation
 from app.db.models.user import User
+from app.repositories.organisation import OrganisationRepository
 from app.security import hash_password
 
 
@@ -46,7 +47,7 @@ def create_user(
     db.add(user)
     db.flush()
     if organisation:
-        user.organisations.append(organisation)
+        OrganisationRepository(db).add_user(user.id, organisation.id, role)
         db.flush()
     db.commit()
     db.refresh(user)
