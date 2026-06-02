@@ -18,6 +18,7 @@ from app.config import get_settings
 from app.db import models  # noqa: F401
 from app.db.base import Base
 from app.db.session import engine as module_engine
+from app.db.uow import should_commit
 from app.dependencies import get_db
 from app.main import app
 from tests.factories import create_organisation, create_user
@@ -68,6 +69,10 @@ def client(db_engine, db_session):
         try:
             yield session
         finally:
+            if should_commit(session):
+                session.commit()
+            else:
+                session.rollback()
             session.close()
 
     app.dependency_overrides[get_db] = override_get_db

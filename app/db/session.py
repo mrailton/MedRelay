@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
+from app.db.uow import should_commit
 
 settings = get_settings()
 
@@ -21,6 +22,10 @@ def get_db() -> Generator[Session]:
     try:
         yield db
     finally:
+        if should_commit(db):
+            db.commit()
+        else:
+            db.rollback()
         db.close()
 
 

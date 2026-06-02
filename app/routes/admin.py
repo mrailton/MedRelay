@@ -1,37 +1,35 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import RedirectResponse
 
-from app.dependencies import AdminUser, CurrentOrg, DbSession, verify_csrf
-from app.enums import UserRole
-from app.repositories.organisation import OrganisationRepository
-from app.repositories.user import UserRepository
+from app.dependencies import AdminUser, CurrentOrg, DbSession
 from app.schemas.forms import AdminUserCreateForm, admin_user_create_form
 from app.services.audit import count_audit_logs, list_audit_logs_paginated
-from app.services.users import create_user, get_user_by_email
-from app.templating import flash, render
+from app.services.users import (
+    create_admin_user,
+    get_admin_user_create_context,
+    list_users_for_organisation,
+)
+from app.templating import render
+from app.web import handle, redirect_to, render_page, verified_form
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-def _admin_create_context(db: DbSession, organisation_id: int) -> dict:
-    org = OrganisationRepository(db).get(organisation_id)
-    return {
-        "roles": UserRole,
-        "organisations": [org] if org else [],
-    }
-
-
 @router.get("/users", name="admin.users.index")
 def admin_users_index(request: Request, user: AdminUser, organisation_id: CurrentOrg, db: DbSession):
-    users = UserRepository(db).list_all_by_organisation(organisation_id)
+    users = list_users_for_organisation(db, organisation_id)
     return render(request, "admin/users/index.html", {"users": users}, user=user)
 
 
 @router.get("/users/create", name="admin.users.create")
 def admin_users_create(request: Request, user: AdminUser, organisation_id: CurrentOrg, db: DbSession):
-    return render(request, "admin/users/create.html", _admin_create_context(db, organisation_id), user=user)
+    return render(
+        request,
+        "admin/users/create.html",
+        get_admin_user_create_context(db, organisation_id),
+        user=user,
+    )
 
 
 @router.post("/users", name="admin.users.store")
@@ -40,68 +38,26 @@ def admin_users_store(
     user: AdminUser,
     organisation_id: CurrentOrg,
     db: DbSession,
-    form: AdminUserCreateForm = Depends(admin_user_create_form),
+    form: AdminUserCreateForm = Depends(verified_form(admin_user_create_form)),
 ):
-    verify_csrf(request, form.csrf_token)
-    ctx = _admin_create_context(db, organisation_id)
-
-    org_ids = form.filtered_organisation_ids(organisation_id)
-    if not org_ids:
-        return render(
+    ctx = get_admin_user_create_context(db, organisation_id)
+    outcome = create_admin_user(db, form, organisation_id, user, request)
+    if not outcome.success:
+        return handle(
             request,
-            "admin/users/create.html",
-            {
-                **ctx,
-                "errors": {"organisation_ids": "You must assign the user to your organisation."},
-                "name": form.name,
-                "email": form.email,
-            },
-            user=user,
+            render_page(
+                "admin/users/create.html",
+                {**ctx, "name": form.name, "email": form.email},
+                errors=outcome.errors,
+                user=user,
+            ),
         )
 
-    if form.password != form.password_confirmation:
-        return render(
-            request,
-            "admin/users/create.html",
-            {
-                **ctx,
-                "errors": {"password": "Passwords do not match."},
-                "name": form.name,
-                "email": form.email,
-            },
-            user=user,
-        )
-
-    if len(form.password) < 8:
-        return render(
-            request,
-            "admin/users/create.html",
-            {
-                **ctx,
-                "errors": {"password": "Password must be at least 8 characters."},
-                "name": form.name,
-                "email": form.email,
-            },
-            user=user,
-        )
-
-    if get_user_by_email(db, form.email):
-        return render(
-            request,
-            "admin/users/create.html",
-            {
-                **ctx,
-                "errors": {"email": "Email already exists."},
-                "name": form.name,
-                "email": form.email,
-            },
-            user=user,
-        )
-
-    create_user(db, form.to_service_dict(org_ids), user, request)
-    db.commit()
-    flash(request, "success", f"User '{form.name}' created.")
-    return RedirectResponse(url="/admin/users", status_code=303)
+    return handle(
+        request,
+        redirect_to("/admin/users", commit=True, flash=("success", f"User '{form.name}' created.")),
+        db=db,
+    )
 
 
 @router.get("/audit-logs", name="admin.audit-logs.index")

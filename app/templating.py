@@ -62,7 +62,13 @@ def flash(request: Request, category: str, message: str) -> None:
     request.session[f"flash_{category}"] = message
 
 
-def render(request: Request, name: str, context: dict | None = None, user=None):
+def render(
+    request: Request,
+    name: str,
+    context: dict | None = None,
+    user=None,
+    status_code: int = 200,
+):
     ctx = {
         "request": request,
         "csrf_token": get_csrf_token(request),
@@ -78,4 +84,4 @@ def render(request: Request, name: str, context: dict | None = None, user=None):
         ctx["errors"] = request.session.pop("validation_errors")
     if context:
         ctx.update(context)
-    return templates.TemplateResponse(request, name, ctx)
+    return templates.TemplateResponse(request, name, ctx, status_code=status_code)

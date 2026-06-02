@@ -119,6 +119,27 @@ forbidden_modules = ["app.db"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
+name = "Routes must not import repositories directly"
+type = "forbidden"
+source_modules = ["app.routes"]
+forbidden_modules = ["app.repositories"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Routes must not import policies directly"
+type = "forbidden"
+source_modules = ["app.routes"]
+forbidden_modules = ["app.policies"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Actions must not import routes"
+type = "forbidden"
+source_modules = ["app.actions"]
+forbidden_modules = ["app.routes"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
 name = "Schemas must not import services or routes"
 type = "forbidden"
 source_modules = ["app.schemas"]

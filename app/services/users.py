@@ -5,10 +5,13 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
+from app.enums import UserRole
 from app.repositories import User
 from app.repositories.organisation import OrganisationRepository
 from app.repositories.user import UserRepository
+from app.schemas.forms.admin import AdminUserCreateForm
 from app.security import hash_password
+from app.services.types import CreateUserOutcome
 
 
 def create_user(
@@ -62,3 +65,42 @@ def get_user_by_email(db: Session, email: str) -> User | None:
 
 def get_user_by_email_and_organisation(db: Session, email: str, organisation_id: int) -> User | None:
     return UserRepository(db).get_by_email_and_organisation(email, organisation_id)
+
+
+def get_admin_user_create_context(db: Session, organisation_id: int) -> dict:
+    org = OrganisationRepository(db).get(organisation_id)
+    return {
+        "roles": UserRole,
+        "organisations": [org] if org else [],
+    }
+
+
+def list_users_for_organisation(db: Session, organisation_id: int) -> list[User]:
+    return UserRepository(db).list_all_by_organisation(organisation_id)
+
+
+def create_admin_user(
+    db: Session,
+    form: AdminUserCreateForm,
+    organisation_id: int,
+    actor: User,
+    request: Request | None = None,
+) -> CreateUserOutcome:
+    org_ids = form.filtered_organisation_ids(organisation_id)
+    if not org_ids:
+        return CreateUserOutcome(
+            success=False,
+            errors={"organisation_ids": "You must assign the user to your organisation."},
+        )
+
+    if form.password != form.password_confirmation:
+        return CreateUserOutcome(success=False, errors={"password": "Passwords do not match."})
+
+    if len(form.password) < 8:
+        return CreateUserOutcome(success=False, errors={"password": "Password must be at least 8 characters."})
+
+    if UserRepository(db).email_exists(form.email):
+        return CreateUserOutcome(success=False, errors={"email": "Email already exists."})
+
+    user = create_user(db, form.to_service_dict(org_ids), actor, request)
+    return CreateUserOutcome(success=True, user=user)

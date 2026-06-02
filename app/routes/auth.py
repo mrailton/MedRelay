@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import RedirectResponse
 
 from app.dependencies import CurrentUser, DbSession, get_csrf_token, require_guest, verify_csrf
-from app.repositories.organisation import OrganisationRepository
-from app.repositories.user import UserRepository
 from app.schemas.forms import LoginForm, LogoutForm, login_form, logout_form
-from app.security import verify_password
+from app.services.auth import authenticate
+from app.services.types import LoginFailure
 from app.templating import render
+from app.web import handle, redirect_to, render_page, verified_form
 
 router = APIRouter(tags=["auth"])
 
@@ -24,43 +23,32 @@ def login(
         return render(request, "auth/login.html", {"errors": {}})
 
     verify_csrf(request, form.csrf_token)
-
-    org = OrganisationRepository(db).get_by_code(form.organisation_code_normalized)
-    if not org:
-        return render(
+    result = authenticate(db, form)
+    if isinstance(result, LoginFailure):
+        return handle(
             request,
-            "auth/login.html",
-            {
-                "errors": {"organisation_code": "Invalid organisation code."},
-                "email": form.email,
-                "organisation_code": form.organisation_code,
-            },
-        )
-
-    user = UserRepository(db).get_by_email_and_organisation(form.email or "", org.id)
-    if not user or not verify_password(form.password or "", user.password):
-        return render(
-            request,
-            "auth/login.html",
-            {
-                "errors": {"email": "The provided credentials do not match our records."},
-                "email": form.email,
-                "organisation_code": form.organisation_code,
-            },
+            render_page(
+                "auth/login.html",
+                {
+                    "email": result.email,
+                    "organisation_code": result.organisation_code,
+                },
+                errors=result.errors,
+                status_code=200,
+            ),
         )
 
     request.session.clear()
-    request.session["user_id"] = user.id
-    request.session["organisation_id"] = org.id
-    request.session["organisation_code"] = org.code
-    if form.remember:
+    request.session["user_id"] = result.user_id
+    request.session["organisation_id"] = result.organisation_id
+    request.session["organisation_code"] = result.organisation_code
+    if result.remember:
         request.session["remember_me"] = True
     get_csrf_token(request)
-    return RedirectResponse(url="/", status_code=303)
+    return handle(request, redirect_to("/"))
 
 
 @router.post("/logout", name="logout")
-def logout(request: Request, user: CurrentUser, form: LogoutForm = Depends(logout_form)):
-    verify_csrf(request, form.csrf_token)
+def logout(request: Request, user: CurrentUser, form: LogoutForm = Depends(verified_form(logout_form))):
     request.session.clear()
-    return RedirectResponse(url="/login", status_code=303)
+    return handle(request, redirect_to("/login"))

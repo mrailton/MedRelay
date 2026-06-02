@@ -1,24 +1,13 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import RedirectResponse, Response
 
 from app.dependencies import CurrentOrg, CurrentUser, DbSession, verify_csrf
 from app.schemas.forms import DashboardSelectEventForm, dashboard_select_event_form
-from app.services.events import get_event, list_active_events
-from app.services.incidents import (
-    count_active_incidents_by_event,
-    count_incidents_by_event,
-    list_incidents_by_event,
-)
-from app.services.resources import (
-    count_available_resources_by_event,
-    count_deployed_resources_by_event,
-    count_out_of_service_resources_by_event,
-    list_resources_by_event,
-)
-from app.services.staff import list_staff
+from app.services.dashboard import build_dashboard_context
 from app.templating import render
+from app.web import handle, redirect_to
+from app.web.responses import ActionResult
 
 router = APIRouter(tags=["dashboard"])
 
@@ -36,50 +25,9 @@ def dashboard(
         request.session["selected_event_id"] = int(form.selected_event_id)
         accept = request.headers.get("accept", "")
         if "application/json" in accept or request.headers.get("x-requested-with") == "XMLHttpRequest":
-            return Response(status_code=204)
-        return RedirectResponse(url="/", status_code=303)
+            return handle(request, ActionResult(empty_response=True))
+        return handle(request, redirect_to("/"))
 
-    active_events = list_active_events(db, organisation_id)
     selected_event_id = request.session.get("selected_event_id")
-    if selected_event_id is None and active_events:
-        selected_event_id = active_events[0].id
-
-    selected_event = None
-    dashboard_data = None
-
-    if selected_event_id is not None:
-        selected_event = get_event(db, selected_event_id, organisation_id)
-        if selected_event:
-            incidents = list_incidents_by_event(db, selected_event.id, organisation_id)
-            resources = list_resources_by_event(db, selected_event.id, organisation_id)
-            total_incidents = count_incidents_by_event(db, selected_event.id, organisation_id)
-            active_incidents = count_active_incidents_by_event(db, selected_event.id, organisation_id)
-            available_resources = count_available_resources_by_event(db, selected_event.id, organisation_id)
-            deployed_resources = count_deployed_resources_by_event(db, selected_event.id, organisation_id)
-            out_of_service = count_out_of_service_resources_by_event(db, selected_event.id, organisation_id)
-            dashboard_data = {
-                "event": selected_event,
-                "incidents": incidents,
-                "resources": resources,
-                "summary": {
-                    "total_incidents": total_incidents or 0,
-                    "active_incidents": active_incidents or 0,
-                    "available_resources": available_resources or 0,
-                    "deployed_resources": deployed_resources or 0,
-                    "out_of_service": out_of_service or 0,
-                },
-            }
-
-    all_staff = list_staff(db, organisation_id)
-
-    return render(
-        request,
-        "dashboard.html",
-        {
-            "active_events": active_events,
-            "selected_event": selected_event,
-            "dashboard_data": dashboard_data,
-            "all_staff": all_staff,
-        },
-        user=user,
-    )
+    context = build_dashboard_context(db, organisation_id, selected_event_id)
+    return render(request, "dashboard.html", context, user=user)
