@@ -11,7 +11,7 @@ from app.web.responses import ActionResult, redirect_to, render_page
 def open_create_form(user: User) -> ActionResult:
     if not policies.can_create_event(user):
         return redirect_to("/events")
-    return render_page("events/create.html", {})
+    return redirect_to("/events?create=1")
 
 
 def open_edit_form(

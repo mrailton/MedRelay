@@ -1,22 +1,20 @@
 {% extends "layouts/app.html" %}
+{% from "components/shared/ui.html" import form_field, page_header %}
 {% block title %}Create User{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Create User</h1>
-<form method="POST" action="{{ url_for('admin.users.store') }}" class="card bg-base-100 max-w-lg shadow-sm">
-    <div class="card-body space-y-4">
+{{ page_header("Create User") }}
+<form method="POST" action="{{ url_for('admin.users.store') }}" class="mr-form-card">
+    <div class="mr-form-card-body">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input type="text" name="name" placeholder="Name" class="input input-bordered w-full" required value="{{ name or '' }}" />
-        {% if errors.get('name') %}<p class="text-error text-sm">{{ errors.name }}</p>{% endif %}
-        <input type="email" name="email" placeholder="Email" class="input input-bordered w-full" required value="{{ email or '' }}" />
-        {% if errors.get('email') %}<p class="text-error text-sm">{{ errors.email }}</p>{% endif %}
-        <input type="password" name="password" placeholder="Password" class="input input-bordered w-full" required />
-        <input type="password" name="password_confirmation" placeholder="Confirm Password" class="input input-bordered w-full" required />
-        {% if errors.get('password') %}<p class="text-error text-sm">{{ errors.password }}</p>{% endif %}
+        {{ form_field("Name", "name", value=name or '', error=errors.get('name', ''), required=true) }}
+        {{ form_field("Email", "email", type="email", value=email or '', error=errors.get('email', ''), required=true) }}
+        {{ form_field("Password", "password", type="password", error=errors.get('password', ''), required=true) }}
+        {{ form_field("Confirm password", "password_confirmation", type="password", required=true) }}
         {% if organisations %}
-        <fieldset>
-            <legend class="text-sm font-semibold mb-2">Organisations & Roles</legend>
+        <fieldset class="mr-field">
+            <legend class="fieldset-label">Organisations &amp; roles</legend>
             {% for org in organisations %}
-            <div class="flex items-center gap-2 mb-2">
+            <div class="mb-2 flex items-center gap-2">
                 <input type="checkbox" name="organisation_ids" value="{{ org.id }}" class="checkbox checkbox-sm org-checkbox" data-org-id="{{ org.id }}" />
                 <span class="flex-1">{{ org.code }} - {{ org.name }}</span>
                 <select name="org_role" class="select select-bordered select-sm w-36" disabled data-org-id="{{ org.id }}">

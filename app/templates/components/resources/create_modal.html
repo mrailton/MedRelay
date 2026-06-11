@@ -1,0 +1,19 @@
+{% from "components/shared/ui.html" import form_field %}
+{% set modal_id = 'create-resource-modal' %}
+{% set modal_title = 'New Resource' %}
+{% set modal_form_action = url_for('events.resources.store', event_id=selected_event.id) %}
+{% set modal_class = 'max-w-lg' %}
+{% set modal_content %}
+    {{ form_field("Name", "name", value=name or '', error=errors.get('name', ''), placeholder="e.g. Alpha 1", required=true) }}
+    <div class="mr-field">
+        <label class="fieldset-label" for="resource_type">Type</label>
+        <select name="resource_type" id="resource_type" class="select select-bordered w-full" required>
+            {% for t in ResourceType %}
+            <option value="{{ t.value }}" {% if resource_type == t.value %}selected{% endif %}>{{ t.label() }}</option>
+            {% endfor %}
+        </select>
+        {% if errors.get('resource_type') %}<p class="text-error text-sm">{{ errors.resource_type }}</p>{% endif %}
+    </div>
+    {% include "components/shared/staff_multiselect.html" %}
+{% endset %}
+{% include "components/shared/modal.html" %}

@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
 COPY frontend ./frontend
+COPY app/templates ./app/templates
 COPY vite.config.js ./
 RUN npm run build
 

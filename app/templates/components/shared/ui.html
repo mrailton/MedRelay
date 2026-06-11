@@ -1,0 +1,86 @@
+{% macro page_header(title, subtitle=none) %}
+<div class="mr-page-header">
+    <div>
+        <h1 class="mr-page-title">{{ title }}</h1>
+        {% if subtitle %}<p class="mr-subtitle">{{ subtitle }}</p>{% endif %}
+    </div>
+    {% if caller %}<div class="flex flex-wrap items-center gap-2">{{ caller() }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro section_header(title) %}
+<div class="mr-section-header">
+    <h2 class="mr-section-title">{{ title }}</h2>
+    {% if caller %}<div class="flex flex-wrap items-center gap-2">{{ caller() }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro form_field(label, name, type='text', value='', error='', required=false, placeholder='', extra_attrs='') %}
+<div class="mr-field">
+    <label class="fieldset-label" for="{{ name }}">{{ label }}</label>
+    <input
+        type="{{ type }}"
+        name="{{ name }}"
+        id="{{ name }}"
+        value="{{ value }}"
+        class="input input-bordered w-full"
+        {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+        {% if required %}required{% endif %}
+        {{ extra_attrs | safe }}
+    />
+    {% if error %}<p class="text-error text-sm">{{ error }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro form_textarea(label, name, value='', error='', required=false, rows=3, placeholder='') %}
+<div class="mr-field">
+    <label class="fieldset-label" for="{{ name }}">{{ label }}</label>
+    <textarea
+        name="{{ name }}"
+        id="{{ name }}"
+        rows="{{ rows }}"
+        class="textarea textarea-bordered w-full"
+        {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+        {% if required %}required{% endif %}
+    >{{ value }}</textarea>
+    {% if error %}<p class="text-error text-sm">{{ error }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro form_select(label, name, options, selected='', error='', required=false) %}
+<div class="mr-field">
+    <label class="fieldset-label" for="{{ name }}">{{ label }}</label>
+    <select name="{{ name }}" id="{{ name }}" class="select select-bordered w-full" {% if required %}required{% endif %}>
+        {% for option in options %}
+        <option value="{{ option.value }}" {% if option.value == selected %}selected{% endif %}>{{ option.label }}</option>
+        {% endfor %}
+    </select>
+    {% if error %}<p class="text-error text-sm">{{ error }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro form_checkbox(name, label, checked=false, value='true') %}
+<label class="label cursor-pointer justify-start gap-3">
+    <input type="checkbox" name="{{ name }}" value="{{ value }}" class="checkbox checkbox-sm" {% if checked %}checked{% endif %} />
+    <span class="label-text">{{ label }}</span>
+</label>
+{% endmacro %}
+
+{% macro panel(title=none) %}
+<div class="mr-panel">
+    <div class="mr-panel-body">
+        {% if title %}<h3 class="mr-panel-title">{{ title }}</h3>{% endif %}
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro empty_state(title, message=none) %}
+<div class="mr-empty-state">
+    <div class="mr-empty-state-body">
+        <h2 class="mb-2 text-xl font-semibold">{{ title }}</h2>
+        {% if message %}<p class="mr-muted mb-4">{{ message }}</p>{% endif %}
+        {% if caller %}{{ caller() }}{% endif %}
+    </div>
+</div>
+{% endmacro %}

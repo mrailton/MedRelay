@@ -1,13 +1,13 @@
 {% extends "layouts/app.html" %}
+{% from "components/shared/ui.html" import form_field, page_header %}
 {% block title %}Edit Organisation{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Edit Organisation</h1>
-<form method="POST" action="{{ url_for('admin.organisations.update', organisation_id=org.id) }}" class="card bg-base-100 max-w-lg shadow-sm">
-    <div class="card-body space-y-4">
+{{ page_header("Edit Organisation") }}
+<form method="POST" action="{{ url_for('admin.organisations.update', organisation_id=org.id) }}" class="mr-form-card">
+    <div class="mr-form-card-body">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input type="text" name="code" placeholder="Code (short identifier)" class="input input-bordered w-full" required value="{{ org.code }}" />
-        {% if errors.get('code') %}<p class="text-error text-sm">{{ errors.code }}</p>{% endif %}
-        <input type="text" name="name" placeholder="Name" class="input input-bordered w-full" required value="{{ org.name }}" />
+        {{ form_field("Code", "code", value=org.code, error=errors.get('code', ''), required=true) }}
+        {{ form_field("Name", "name", value=org.name, error=errors.get('name', ''), required=true) }}
         <button type="submit" class="btn btn-primary">Update</button>
     </div>
 </form>

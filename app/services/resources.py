@@ -49,7 +49,7 @@ def create_resource(
         if not isinstance(staff_ids, list):
             staff_ids = [staff_ids]
         staff_repo = StaffRepository(db)
-        resource.staff = staff_repo.list_by_ids(staff_ids)
+        resource.staff = staff_repo.list_by_ids(staff_ids, organisation_id=event.organisation_id)
         from app.services.resource_capability import recalculate_resource_capability
 
         recalculate_resource_capability(db, resource)

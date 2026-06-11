@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
+{% from "components/shared/ui.html" import page_header %}
 {% block title %}Resources{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Resources — {{ event.name }}</h1>
+{{ page_header("Resources", event.name) }}
 {% include "components/resources/table.html" %}
 {% endblock %}

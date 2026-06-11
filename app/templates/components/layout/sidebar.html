@@ -7,13 +7,13 @@
         <a href="{{ url_for('staff.index') }}" class="btn btn-ghost justify-start {% if route_is(request, 'staff') %}btn-active{% endif %}">Staff</a>
         {% if can(user, 'admin-only', organisation_id=current_org_id) %}
         <div class="divider my-2"></div>
-        <span class="text-xs font-semibold opacity-60 px-4">Organisation admin</span>
+        <span class="mr-nav-section">Organisation admin</span>
         <a href="{{ url_for('admin.users.index') }}" class="btn btn-ghost justify-start {% if route_is(request, 'admin.users.*') %}btn-active{% endif %}">Users</a>
         <a href="{{ url_for('admin.audit-logs.index') }}" class="btn btn-ghost justify-start {% if route_is(request, 'admin.audit-logs.*') %}btn-active{% endif %}">Audit Logs</a>
         {% endif %}
         {% if is_platform_admin %}
         <div class="divider my-2"></div>
-        <span class="text-xs font-semibold opacity-60 px-4">Platform</span>
+        <span class="mr-nav-section">Platform</span>
         <a href="{{ url_for('platform.organisations.index') }}" class="btn btn-ghost justify-start {% if route_is(request, 'platform.organisations.*') %}btn-active{% endif %}">Organisations</a>
         <a href="{{ url_for('platform.system') }}" class="btn btn-ghost justify-start {% if route_is(request, 'platform.system') %}btn-active{% endif %}">System</a>
         {% endif %}

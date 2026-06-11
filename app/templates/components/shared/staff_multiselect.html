@@ -1,0 +1,40 @@
+<div class="mr-field" x-data="{
+    query: '',
+    matchesSearch(el) {
+        if (!this.query.trim()) return true;
+        return (el.dataset.search || '').toLowerCase().includes(this.query.trim().toLowerCase());
+    },
+}">
+    <label class="fieldset-label" for="{{ field_id | default('staff-search') }}">Staff</label>
+    <p class="mb-2 text-xs mr-muted">Optional — select one or more team members for this resource.</p>
+    {% if all_staff %}
+    <input
+        type="search"
+        id="{{ field_id | default('staff-search') }}"
+        x-model="query"
+        class="input input-bordered input-sm mb-2 w-full"
+        placeholder="Search by name or clinical level..."
+        autocomplete="off"
+    />
+    <div class="max-h-48 overflow-y-auto rounded-box border border-base-300 bg-base-100">
+        {% for s in all_staff %}
+        <label
+            class="flex cursor-pointer items-center gap-3 border-b border-base-200 px-3 py-2 last:border-b-0 hover:bg-base-200/60"
+            data-search="{{ s.full_name }} {{ s.clinical_level }}"
+            x-show="matchesSearch($el)"
+        >
+            <input type="checkbox" name="staff_ids" value="{{ s.id }}" class="checkbox checkbox-sm" />
+            <span class="min-w-0 flex-1">
+                <span class="block truncate font-medium">{{ s.full_name }}</span>
+                <span class="mr-muted text-xs">{{ s.clinical_level }}</span>
+            </span>
+        </label>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="rounded-box border border-dashed border-base-300 p-3 text-sm mr-muted">
+        No staff available yet. Add staff from the Staff page first.
+    </p>
+    {% endif %}
+    {% if errors.get('staff_ids') %}<p class="text-error text-sm">{{ errors.staff_ids }}</p>{% endif %}
+</div>

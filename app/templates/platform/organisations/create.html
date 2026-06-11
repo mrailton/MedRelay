@@ -1,14 +1,13 @@
 {% extends "layouts/app.html" %}
+{% from "components/shared/ui.html" import form_field, page_header %}
 {% block title %}Create Organisation{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">Create Organisation</h1>
-<form method="POST" action="{{ url_for('platform.organisations.store') }}" class="card bg-base-100 max-w-lg shadow-sm">
-    <div class="card-body gap-4">
+{{ page_header("Create Organisation") }}
+<form method="POST" action="{{ url_for('platform.organisations.store') }}" class="mr-form-card">
+    <div class="mr-form-card-body">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <label class="form-control"><span class="label-text">Code</span><input type="text" name="code" value="{{ code or '' }}" class="input input-bordered" required></label>
-        {% if errors and errors.code %}<p class="text-error text-sm">{{ errors.code }}</p>{% endif %}
-        <label class="form-control"><span class="label-text">Name</span><input type="text" name="name" value="{{ name or '' }}" class="input input-bordered" required></label>
-        {% if errors and errors.name %}<p class="text-error text-sm">{{ errors.name }}</p>{% endif %}
+        {{ form_field("Code", "code", value=code or '', error=(errors or {}).get('code', ''), required=true) }}
+        {{ form_field("Name", "name", value=name or '', error=(errors or {}).get('name', ''), required=true) }}
         <button type="submit" class="btn btn-primary">Create</button>
     </div>
 </form>

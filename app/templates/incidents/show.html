@@ -1,66 +1,67 @@
 {% extends "layouts/app.html" %}
+{% from "components/shared/ui.html" import form_checkbox, form_textarea, page_header, panel %}
 {% block title %}Incident {{ incident.reference }}{% endblock %}
 {% block content %}
-<div class="max-w-6xl mx-auto" x-data="incidentRealtime({{ incident.event_id }}, {{ incident.id }})" x-init="init()">
-    <div class="flex items-center justify-between mb-6">
-        <div><h1 class="text-2xl font-bold">Incident {{ incident.reference }}</h1>
-        <p class="text-base-content/60">{{ incident.event.name }}</p></div>
-        <div class="flex gap-2">
-            <a href="{{ url_for('events.show', event_id=incident.event_id) }}" class="btn btn-ghost btn-sm">Event</a>
-            <a href="{{ url_for('dashboard') }}" class="btn btn-ghost btn-sm">Dashboard</a>
-        </div>
-    </div>
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 card bg-base-100 shadow-sm"><div class="card-body space-y-4">
+<div class="mx-auto max-w-6xl" x-data="incidentRealtime({{ incident.event_id }}, {{ incident.id }})" x-init="init()">
+    {% call page_header("Incident " ~ incident.reference, incident.event.name) %}
+        <a href="{{ url_for('events.show', event_id=incident.event_id) }}" class="btn btn-ghost btn-sm">Event</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-ghost btn-sm">Dashboard</a>
+    {% endcall %}
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div class="lg:col-span-2">
+        {% call panel() %}
             <div class="grid grid-cols-2 gap-4">
-                <div><span class="text-sm opacity-60">Priority</span><p>{{ incident.priority }}</p></div>
-                <div><span class="text-sm opacity-60">Status</span>{% set status = incident.status %}{% include "components/shared/status_badge.html" %}</div>
-                <div><span class="text-sm opacity-60">Category</span><p>{{ incident.category }}</p></div>
-                <div><span class="text-sm opacity-60">Location</span><p>{{ incident.location }}</p></div>
+                <div><span class="mr-field-label">Priority</span><p>{{ incident.priority }}</p></div>
+                <div><span class="mr-field-label">Status</span>{% set status = incident.status %}{% include "components/shared/status_badge.html" %}</div>
+                <div><span class="mr-field-label">Category</span><p>{{ incident.category }}</p></div>
+                <div><span class="mr-field-label">Location</span><p>{{ incident.location }}</p></div>
             </div>
-            <div><span class="text-sm opacity-60">Description</span><p class="whitespace-pre-wrap">{{ incident.description }}</p></div>
-            <div><span class="text-sm opacity-60">Resources</span>
-                {% for r in incident.resources %}<a href="{{ url_for('resources.show', resource_id=r.id) }}" class="link mr-2">{{ r.name }}</a>{% else %}Unassigned{% endfor %}
+            <div><span class="mr-field-label">Description</span><p class="whitespace-pre-wrap">{{ incident.description }}</p></div>
+            <div><span class="mr-field-label">Resources</span>
+                <p>{% for r in incident.resources %}<a href="{{ url_for('resources.show', resource_id=r.id) }}" class="link link-primary mr-2">{{ r.name }}</a>{% else %}Unassigned{% endfor %}</p>
             </div>
-        </div></div>
+        {% endcall %}
+        </div>
         <div class="space-y-6">
             {% if can(user, 'updateStatus', 'incident', incident) %}
-            <div class="card bg-base-100 shadow-sm"><div class="card-body">
-                <h3 class="font-semibold mb-4">Update Status</h3>
+            {% call panel("Update status") %}
                 <form method="POST" action="{{ url_for('incidents.update-status', incident_id=incident.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <select name="status" onchange="this.form.submit()" class="select select-bordered select-sm w-full mb-2">
+                    <select name="status" onchange="this.form.submit()" class="select select-bordered select-sm w-full">
                         {% for s in IncidentStatus %}<option value="{{ s.value }}" {% if incident.status == s.value %}selected{% endif %}>{{ s.label() }}</option>{% endfor %}
                     </select>
                 </form>
-            </div></div>
-            <div class="card bg-base-100 shadow-sm"><div class="card-body">
-                <h3 class="font-semibold mb-4">Assign Resources</h3>
-                <form method="POST" action="{{ url_for('incidents.assign-resource', incident_id=incident.id) }}">
+            {% endcall %}
+            {% call panel("Assign resources") %}
+                <form method="POST" action="{{ url_for('incidents.assign-resource', incident_id=incident.id) }}" class="space-y-1">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     {% for r in event_resources %}
-                    <label class="flex items-center gap-2 py-1">
-                        <input type="checkbox" name="resource_ids" value="{{ r.id }}" onchange="this.form.submit()" {% if r.id in incident.resources|map(attribute='id')|list %}checked{% endif %} />
-                        {{ r.name }}
+                    <label class="label cursor-pointer justify-start gap-3 py-1">
+                        <input type="checkbox" name="resource_ids" value="{{ r.id }}" class="checkbox checkbox-sm resource-checkbox"
+                            {% if r.id in incident.resources|map(attribute='id')|list %}checked{% endif %} />
+                        <span class="label-text">{{ r.name }}</span>
                     </label>
                     {% endfor %}
                 </form>
-            </div></div>
+            {% endcall %}
             {% endif %}
-            <div class="card bg-base-100 shadow-sm"><div class="card-body">
-                <h3 class="font-semibold mb-4">Notes</h3>
+            {% call panel("Notes") %}
                 {% for note in incident.notes | reverse %}
-                    <div class="border-b py-2 text-sm"><p>{{ note.content }}</p>
-                    <span class="opacity-50">{{ note.user.name if note.user else 'System' }} · {{ note.created_at }}</span></div>
+                <div class="border-b border-base-200 py-2 text-sm">
+                    <p>{{ note.content }}</p>
+                    <span class="mr-muted text-xs">{{ note.user.name if note.user else 'System' }} · {{ note.created_at }}</span>
+                </div>
+                {% else %}
+                <p class="mr-muted text-sm">No notes yet.</p>
                 {% endfor %}
                 {% if can(user, 'update', 'incident', incident) %}
-                    <form method="POST" action="{{ url_for('incidents.notes.store', incident_id=incident.id) }}" class="mt-4">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <textarea name="content" class="textarea textarea-bordered w-full text-sm" rows="2" required></textarea>
-                        <button type="submit" class="btn btn-sm btn-primary mt-2">Add Note</button>
-                    </form>
+                <form method="POST" action="{{ url_for('incidents.notes.store', incident_id=incident.id) }}" class="mt-4 space-y-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    {{ form_textarea("Add a note", "content", required=true, rows=2) }}
+                    <button type="submit" class="btn btn-primary btn-sm">Add note</button>
+                </form>
                 {% endif %}
-            </div></div>
+            {% endcall %}
         </div>
     </div>
 </div>
@@ -71,6 +72,9 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('incidentRealtime', (eventId, incidentId) => ({
         init() { if (window.subscribeRealtime) window.subscribeRealtime({ eventId, incidentId }); }
     }));
+});
+document.querySelectorAll('.resource-checkbox').forEach(function(cb) {
+    cb.addEventListener('change', function() { this.form.submit(); });
 });
 </script>
 {% endblock %}

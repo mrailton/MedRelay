@@ -34,8 +34,9 @@ def test_staff_requires_auth(client, db_session, organisation):
 
 def test_staff_create_get(client, db_session, organisation):
     _login(client, db_session, organisation)
-    response = client.get("/staff/create")
+    response = client.get("/staff/create", follow_redirects=True)
     assert response.status_code == 200
+    assert 'id="create-staff-modal"' in response.text
 
 
 def test_staff_store(client, db_session, organisation):

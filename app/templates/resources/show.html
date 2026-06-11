@@ -1,39 +1,46 @@
 {% extends "layouts/app.html" %}
+{% from "components/shared/ui.html" import page_header, panel %}
 {% block title %}{{ resource.name }}{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">{{ resource.name }}</h1>
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="card bg-base-100 shadow-sm"><div class="card-body">
-        <p>Type: {{ resource.resource_type }}</p>
-        <p>Status: {% set status = resource.status %}{% include "components/shared/status_badge.html" %}</p>
-        <p>Deployable: {{ resource.is_deployable }}</p>
-        <h3 class="font-semibold mt-4">Staff</h3>
-        {% for s in resource.staff %}<span class="badge badge-ghost">{{ s.full_name }}</span>{% endfor %}
-    </div></div>
+{{ page_header(resource.name) }}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    {% call panel() %}
+        <p><span class="mr-field-label">Type</span><br>{{ resource.resource_type }}</p>
+        <p><span class="mr-field-label">Status</span><br>{% set status = resource.status %}{% include "components/shared/status_badge.html" %}</p>
+        <div>
+            <span class="mr-field-label">Staff</span>
+            <div class="mt-1 flex flex-wrap gap-2">
+                {% for s in resource.staff %}<span class="badge badge-ghost">{{ s.full_name }}</span>{% else %}<span class="mr-muted text-sm">None assigned</span>{% endfor %}
+            </div>
+        </div>
+    {% endcall %}
     {% if can(user, 'update', 'resource', resource) %}
-    <div class="card bg-base-100 shadow-sm"><div class="card-body space-y-4">
-        <form method="POST" action="{{ url_for('resources.update-status', resource_id=resource.id) }}">
+    {% call panel("Manage resource") %}
+        <form method="POST" action="{{ url_for('resources.update-status', resource_id=resource.id) }}" class="space-y-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <select name="status" class="select select-bordered w-full">
-                {% for s in ResourceStatus %}<option value="{{ s.value }}">{{ s.label() }}</option>{% endfor %}
+            <label class="fieldset-label" for="status">Status</label>
+            <select name="status" id="status" class="select select-bordered w-full">
+                {% for s in ResourceStatus %}<option value="{{ s.value }}" {% if resource.status == s.value %}selected{% endif %}>{{ s.label() }}</option>{% endfor %}
             </select>
-            <button type="submit" class="btn btn-primary btn-sm mt-2">Update Status</button>
+            <button type="submit" class="btn btn-primary btn-sm">Update status</button>
         </form>
-        <form method="POST" action="{{ url_for('resources.assign-staff', resource_id=resource.id) }}">
+        <div class="divider my-2"></div>
+        <form method="POST" action="{{ url_for('resources.assign-staff', resource_id=resource.id) }}" class="space-y-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <select name="staff_id" class="select select-bordered w-full">
+            <label class="fieldset-label" for="staff_id">Assign staff</label>
+            <select name="staff_id" id="staff_id" class="select select-bordered w-full">
                 {% for s in all_staff %}<option value="{{ s.id }}">{{ s.full_name }}</option>{% endfor %}
             </select>
-            <button type="submit" class="btn btn-primary btn-sm mt-2">Assign Staff</button>
+            <button type="submit" class="btn btn-primary btn-sm">Assign staff</button>
         </form>
         {% for s in resource.staff %}
-        <form method="POST" action="{{ url_for('resources.remove-staff', resource_id=resource.id) }}" class="inline">
+        <form method="POST" action="{{ url_for('resources.remove-staff', resource_id=resource.id) }}" class="pt-1">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="staff_id" value="{{ s.id }}" />
             <button type="submit" class="btn btn-ghost btn-xs">Remove {{ s.full_name }}</button>
         </form>
         {% endfor %}
-    </div></div>
+    {% endcall %}
     {% endif %}
 </div>
 {% endblock %}

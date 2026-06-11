@@ -31,8 +31,9 @@ def test_events_index_requires_auth(client, db_session, organisation):
 
 def test_events_create_get(client, db_session, organisation):
     _login(client, db_session, organisation)
-    response = client.get("/events/create")
+    response = client.get("/events/create", follow_redirects=True)
     assert response.status_code == 200
+    assert 'id="create-event-modal"' in response.text
 
 
 def test_events_store(client, db_session, organisation):

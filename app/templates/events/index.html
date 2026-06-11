@@ -1,21 +1,37 @@
 {% extends "layouts/app.html" %}
+{% from "components/shared/ui.html" import page_header %}
 {% block title %}Events{% endblock %}
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">Events</h1>
-    {% if can(user, 'create', 'event') %}<a href="{{ url_for('events.create') }}" class="btn btn-primary">New Event</a>{% endif %}
-</div>
-<div class="overflow-x-auto bg-base-100 rounded-box shadow-sm">
+{% call page_header("Events") %}
+    {% if can(user, 'create', 'event') %}
+    <button type="button" class="btn btn-primary" onclick="document.getElementById('create-event-modal').showModal()">New Event</button>
+    {% endif %}
+{% endcall %}
+<div class="mr-data-table">
     <table class="table">
         <thead><tr><th>Name</th><th>Location</th><th>Start</th><th>Active</th><th></th></tr></thead>
         <tbody>
             {% for event in events %}
-            <tr><td><a href="{{ url_for('events.show', event_id=event.id) }}" class="link">{{ event.name }}</a></td>
-                <td>{{ event.location }}</td><td>{{ event.start_time }}</td>
+            <tr>
+                <td><a href="{{ url_for('events.show', event_id=event.id) }}" class="link link-primary">{{ event.name }}</a></td>
+                <td>{{ event.location }}</td>
+                <td>{{ event.start_time }}</td>
                 <td>{% if event.is_active %}<span class="badge badge-success">Active</span>{% endif %}</td>
-                <td><a href="{{ url_for('events.edit', event_id=event.id) }}" class="btn btn-xs">Edit</a></td></tr>
-            {% else %}<tr><td colspan="5" class="text-center">No events</td></tr>{% endfor %}
+                <td><a href="{{ url_for('events.edit', event_id=event.id) }}" class="btn btn-ghost btn-xs">Edit</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="py-4 text-center mr-muted">No events</td></tr>
+            {% endfor %}
         </tbody>
     </table>
 </div>
+{% endblock %}
+{% block modals %}
+{% if can(user, 'create', 'event') %}
+{% include "components/events/create_modal.html" %}
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% set modal_id = 'create-event-modal' %}
+{% include "components/shared/open_modal_on_load.html" %}
 {% endblock %}

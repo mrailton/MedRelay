@@ -1,0 +1,5 @@
+{% if errors or request.query_params.get('create') %}
+<script>
+document.getElementById('{{ modal_id }}')?.showModal();
+</script>
+{% endif %}

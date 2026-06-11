@@ -1,0 +1,19 @@
+{% from "components/shared/ui.html" import form_checkbox, form_field, form_textarea %}
+{% set modal_id = 'create-staff-modal' %}
+{% set modal_title = 'Add Staff' %}
+{% set modal_form_action = url_for('staff.store') %}
+{% set modal_content %}
+    {{ form_field("First name", "first_name", value=first_name or '', error=errors.get('first_name', ''), required=true) }}
+    {{ form_field("Last name", "last_name", value=last_name or '', error=errors.get('last_name', ''), required=true) }}
+    <div class="mr-field">
+        <label class="fieldset-label" for="clinical_level">Clinical level</label>
+        <select name="clinical_level" id="clinical_level" class="select select-bordered w-full" required>
+            {% for level in ClinicalLevel %}
+            <option value="{{ level.value }}" {% if clinical_level == level.value %}selected{% endif %}>{{ level.label() }}</option>
+            {% endfor %}
+        </select>
+        {% if errors.get('clinical_level') %}<p class="text-error text-sm">{{ errors.clinical_level }}</p>{% endif %}
+    </div>
+    {{ form_textarea("Notes", "notes", value=notes or '', error=errors.get('notes', '')) }}
+{% endset %}
+{% include "components/shared/modal.html" %}

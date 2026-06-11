@@ -17,12 +17,12 @@
             {% if user %}
             {% include "components/layout/nav.html" %}
             {% endif %}
-            <main class="flex-1 p-4 lg:p-6">
+            <main class="mx-auto w-full max-w-7xl flex-1 p-4 lg:p-6">
                 {% if success %}
-                <div class="alert alert-success mb-4"><span>{{ success }}</span></div>
+                <div class="alert alert-success mb-4 shadow-sm"><span>{{ success }}</span></div>
                 {% endif %}
                 {% if error %}
-                <div class="alert alert-error mb-4"><span>{{ error }}</span></div>
+                <div class="alert alert-error mb-4 shadow-sm"><span>{{ error }}</span></div>
                 {% endif %}
                 {% block content %}{% endblock %}
             </main>

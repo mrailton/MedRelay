@@ -1,7 +1,7 @@
-<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-    <div class="stat bg-base-100 rounded-box shadow-sm"><div class="stat-title">Total Incidents</div><div class="stat-value text-2xl">{{ summary.total_incidents }}</div></div>
-    <div class="stat bg-base-100 rounded-box shadow-sm"><div class="stat-title">Active</div><div class="stat-value text-2xl">{{ summary.active_incidents }}</div></div>
-    <div class="stat bg-base-100 rounded-box shadow-sm"><div class="stat-title">Available</div><div class="stat-value text-2xl">{{ summary.available_resources }}</div></div>
-    <div class="stat bg-base-100 rounded-box shadow-sm"><div class="stat-title">Deployed</div><div class="stat-value text-2xl">{{ summary.deployed_resources }}</div></div>
-    <div class="stat bg-base-100 rounded-box shadow-sm"><div class="stat-title">Out of Service</div><div class="stat-value text-2xl">{{ summary.out_of_service }}</div></div>
+<div class="mr-stat-grid">
+    <div class="mr-stat"><div class="stat-title">Total Incidents</div><div class="stat-value text-2xl">{{ summary.total_incidents }}</div></div>
+    <div class="mr-stat"><div class="stat-title">Active</div><div class="stat-value text-2xl">{{ summary.active_incidents }}</div></div>
+    <div class="mr-stat"><div class="stat-title">Available</div><div class="stat-value text-2xl">{{ summary.available_resources }}</div></div>
+    <div class="mr-stat"><div class="stat-title">Deployed</div><div class="stat-value text-2xl">{{ summary.deployed_resources }}</div></div>
+    <div class="mr-stat"><div class="stat-title">Out of Service</div><div class="stat-value text-2xl">{{ summary.out_of_service }}</div></div>
 </div>

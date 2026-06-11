@@ -1,28 +1,19 @@
-{% extends "layouts/app.html" %}
+{% extends "layouts/auth.html" %}
+{% from "components/shared/ui.html" import form_checkbox, form_field %}
 {% block title %}Login{% endblock %}
 {% block content %}
-<div class="min-h-screen flex items-center justify-center">
-    <div class="card bg-base-100 w-full max-w-sm shadow-xl">
-        <div class="card-body">
-            <h2 class="card-title text-2xl mb-4">MedRelay CAD</h2>
-            <p class="text-base-content/60 mb-4">Sign in to your account</p>
-            <form method="POST" action="{{ url_for('login') }}" class="space-y-4">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <label class="fieldset-label">Organisation Code</label>
-                <input type="text" name="organisation_code" value="{{ organisation_code or '' }}" class="input input-bordered w-full" required autofocus />
-                {% if errors.get('organisation_code') %}<span class="text-error text-sm">{{ errors.organisation_code }}</span>{% endif %}
-                <label class="fieldset-label">Email</label>
-                <input type="email" name="email" value="{{ email or '' }}" class="input input-bordered w-full" required />
-                {% if errors.get('email') %}<span class="text-error text-sm">{{ errors.email }}</span>{% endif %}
-                <label class="fieldset-label">Password</label>
-                <input type="password" name="password" class="input input-bordered w-full" required />
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" name="remember" id="remember" class="checkbox checkbox-sm" />
-                    <label for="remember" class="text-sm">Remember me</label>
-                </div>
-                <button type="submit" class="btn btn-primary w-full">Sign In</button>
-            </form>
-        </div>
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <h2 class="card-title text-2xl">MedRelay CAD</h2>
+        <p class="mr-muted mb-2">Sign in to your account</p>
+        <form method="POST" action="{{ url_for('login') }}" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            {{ form_field("Organisation Code", "organisation_code", value=organisation_code or '', error=errors.get('organisation_code', ''), required=true, extra_attrs='autofocus') }}
+            {{ form_field("Email", "email", type="email", value=email or '', error=errors.get('email', ''), required=true) }}
+            {{ form_field("Password", "password", type="password", required=true) }}
+            {{ form_checkbox("remember", "Remember me") }}
+            <button type="submit" class="btn btn-primary w-full">Sign In</button>
+        </form>
     </div>
 </div>
 {% endblock %}

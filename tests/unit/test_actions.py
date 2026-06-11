@@ -15,7 +15,7 @@ def test_open_create_event_allowed_for_controller(db_session):
     org = create_organisation(db_session)
     user = create_user(db_session, role="CONTROLLER", organisation=org)
     result = events.open_create_form(user)
-    assert result.template == "events/create.html"
+    assert result.redirect_url == "/events?create=1"
 
 
 def test_open_create_staff_denied_for_read_only(db_session):

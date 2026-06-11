@@ -11,7 +11,7 @@
             <a href="{{ url_for('resources.show', resource_id=resource.id) }}" class="text-sm link link-hover">{{ resource.name }}</a>
             {% endfor %}
         </div>
-        {% else %}<span class="text-base-content/40 text-sm">Unassigned</span>{% endif %}
+        {% else %}<span class="mr-muted text-sm">Unassigned</span>{% endif %}
     </td>
     <td><a href="{{ url_for('incidents.show', incident_id=incident.id) }}" class="btn btn-ghost btn-xs">View</a></td>
 </tr>
