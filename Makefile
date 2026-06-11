@@ -13,9 +13,8 @@ install: ## Install all dependencies (Python + Node)
 
 clean: ## Remove cache and temporary files
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name .import_linter_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	rm -rf .pytest_cache htmlcov .coverage
+	rm -rf .pytest_cache htmlcov .coverage import_linter_cache .mypy_cache .ruff_cache
 
 # ── Testing ──────────────────────────────────────────────────────────────────
 
