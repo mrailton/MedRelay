@@ -1,6 +1,6 @@
 .PHONY: help install dev clean test test-verbose test-file test-coverage test-k \
        lint lint-fix format format-check typecheck lint-imports \
-       assets assets-watch
+       assets assets-watch setup dev server
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -11,10 +11,24 @@ install: ## Install all dependencies (Python + Node)
 	uv sync
 	npm ci
 
+setup: ## First-time setup: install deps and build assets
+	$(MAKE) install
+	$(MAKE) assets
+
+dev: ## Run dev server and watch assets (parallel)
+	@$(MAKE) -j2 server assets-watch
+
+server: ## Run FastAPI with reload
+	uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
 clean: ## Remove cache and temporary files
+	rm -rf app/resources/static/dist
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .mypy_cache -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .ruff_cache -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .import_linter_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	rm -rf .pytest_cache htmlcov .coverage import_linter_cache .mypy_cache .ruff_cache
+	rm -rf .pytest_cache htmlcov .coverage
 
 # ── Testing ──────────────────────────────────────────────────────────────────
 
