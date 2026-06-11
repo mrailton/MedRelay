@@ -46,7 +46,7 @@ app.add_middleware(
     https_only=settings.session_secure_cookie,
 )
 
-static_dir = Path(__file__).resolve().parent.parent / "static" / "dist"
+static_dir = Path(__file__).resolve().parent / "resources" / "static" / "dist"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 

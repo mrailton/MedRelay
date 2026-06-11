@@ -5,7 +5,7 @@ __pycache__/
 .git
 .gitignore
 node_modules/
-static/dist/
+app/resources/static/dist/
 *.md
 .vscode/
 .idea/

@@ -4,15 +4,14 @@ FROM node:22-alpine AS frontend
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
-COPY frontend ./frontend
-COPY app/templates ./app/templates
+COPY app/resources ./app/resources
 COPY vite.config.js ./
 RUN npm run build
 
 FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS app
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
-COPY --from=frontend /app/static/dist ./static/dist
+COPY --from=frontend /app/app/resources/static/dist ./app/resources/static/dist
 COPY app ./app
 COPY web.py ./web.py
 RUN uv sync --frozen --no-dev

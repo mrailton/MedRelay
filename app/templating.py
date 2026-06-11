@@ -7,7 +7,7 @@ from app import policies
 from app.dependencies import get_csrf_token
 from app.enums import ClinicalLevel, IncidentStatus, ResourceStatus, ResourceType, UserRole
 
-TEMPLATES_DIR = Path(__file__).parent / "templates"
+TEMPLATES_DIR = Path(__file__).parent / "resources" / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 _route_names: dict[str, str] = {}

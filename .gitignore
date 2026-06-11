@@ -7,6 +7,6 @@ htmlcov/
 .pytest_cache/
 .ruff_cache/
 node_modules/
-static/dist/
+app/resources/static/dist/
 dist/
 *.egg-info/
