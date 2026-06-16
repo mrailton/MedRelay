@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -26,28 +29,19 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'role' => UserRole::class,
-        ];
-    }
-
     public function isAdmin(): bool
     {
-        return $this->role === UserRole::Admin;
+        return UserRole::Admin === $this->role;
     }
 
     public function isController(): bool
     {
-        return $this->role === UserRole::Controller;
+        return UserRole::Controller === $this->role;
     }
 
     public function isReadOnly(): bool
     {
-        return $this->role === UserRole::ReadOnly;
+        return UserRole::ReadOnly === $this->role;
     }
 
     public function isControllerOrAdmin(): bool
@@ -55,13 +49,22 @@ class User extends Authenticatable
         return $this->isAdmin() || $this->isController();
     }
 
-    public function incidentNotes()
+    public function incidentNotes(): HasMany
     {
         return $this->hasMany(IncidentNote::class);
     }
 
-    public function auditLogs()
+    public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'role' => UserRole::class,
+        ];
     }
 }

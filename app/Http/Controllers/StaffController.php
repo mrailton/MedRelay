@@ -1,29 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreStaffRequest;
 use App\Models\AuditLog;
 use App\Models\Staff;
-use Illuminate\Http\Request;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class StaffController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $staff = Staff::orderBy('first_name')->get();
         return view('staff.index', compact('staff'));
     }
 
-    public function store(Request $request)
+    public function store(StoreStaffRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'clinical_level' => 'required|in:far,efr,emt,paramedic,advanced_paramedic',
-            'notes' => 'nullable|string',
-        ]);
-
-        $staff = Staff::create($data);
+        $staff = Staff::create($request->validated());
 
         AuditLog::log('staff.created', 'staff', (string) $staff->id, after: $staff->toArray());
 

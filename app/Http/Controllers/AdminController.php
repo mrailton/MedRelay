@@ -1,35 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreUserRequest;
 use App\Models\AuditLog;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class AdminController extends Controller
 {
-    public function users()
+    public function users(): View
     {
         $users = User::orderBy('name')->get();
         return view('admin.users', compact('users'));
     }
 
-    public function createUser()
+    public function createUser(): View
     {
         return view('admin.users-create');
     }
 
-    public function storeUser(Request $request)
+    public function storeUser(StoreUserRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => ['required', 'confirmed', Password::defaults()],
-            'role' => 'required|in:admin,controller,read_only',
-        ]);
-
-        $user = User::create($data);
+        $user = User::create($request->validated());
 
         AuditLog::log('user.created', 'user', (string) $user->id, after: $user->toArray());
 
@@ -37,7 +33,7 @@ class AdminController extends Controller
             ->with('success', 'User created successfully.');
     }
 
-    public function auditLogs()
+    public function auditLogs(): View
     {
         $logs = AuditLog::with('user')
             ->orderBy('created_at', 'desc')

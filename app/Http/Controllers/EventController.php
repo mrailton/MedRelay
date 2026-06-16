@@ -1,31 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreEventRequest;
 use App\Models\AuditLog;
 use App\Models\Event;
-use Illuminate\Http\Request;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class EventController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $events = Event::orderBy('created_at', 'desc')->get();
         return view('events.index', compact('events'));
     }
 
-    public function store(Request $request)
+    public function store(StoreEventRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'location' => 'required|string|max:255',
-            'start_time' => 'required|date',
-            'end_time' => 'nullable|date|after:start_time',
-            'is_active' => 'boolean',
-            'notes' => 'nullable|string',
-        ]);
-
-        $event = Event::create($data);
+        $event = Event::create($request->validated());
 
         AuditLog::log('event.created', 'event', (string) $event->id, after: $event->toArray());
 
@@ -33,29 +28,20 @@ class EventController extends Controller
             ->with('success', 'Event created successfully.');
     }
 
-    public function show(Event $event)
+    public function show(Event $event): View
     {
         return view('events.show', compact('event'));
     }
 
-    public function edit(Event $event)
+    public function edit(Event $event): View
     {
         return view('events.edit', compact('event'));
     }
 
-    public function update(Request $request, Event $event)
+    public function update(StoreEventRequest $request, Event $event): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'location' => 'required|string|max:255',
-            'start_time' => 'required|date',
-            'end_time' => 'nullable|date|after:start_time',
-            'is_active' => 'boolean',
-            'notes' => 'nullable|string',
-        ]);
-
         $before = $event->toArray();
-        $event->update($data);
+        $event->update($request->validated());
         AuditLog::log('event.updated', 'event', (string) $event->id, before: $before, after: $event->toArray());
 
         return redirect()->route('events.show', $event)

@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Enums\ClinicalLevel;
 use App\Enums\ResourceStatus;
 use App\Enums\ResourceType;
-use App\Enums\ClinicalLevel;
 use Database\Factories\ResourceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,16 +27,6 @@ class Resource extends Model
         'highest_clinical_level',
         'is_deployable',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'resource_type' => ResourceType::class,
-            'status' => ResourceStatus::class,
-            'is_deployable' => 'boolean',
-            'highest_clinical_level' => ClinicalLevel::class,
-        ];
-    }
 
     public function event(): BelongsTo
     {
@@ -65,5 +57,15 @@ class Resource extends Model
         $this->highest_clinical_level = $highest;
         $this->is_deployable = $this->staff()->count() > 0;
         $this->save();
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'resource_type' => ResourceType::class,
+            'status' => ResourceStatus::class,
+            'is_deployable' => 'boolean',
+            'highest_clinical_level' => ClinicalLevel::class,
+        ];
     }
 }

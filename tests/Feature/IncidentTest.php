@@ -1,12 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Models\Event;
 use App\Models\Incident;
 use App\Models\Resource;
 
-test('controller can create incident', function () {
+test('incidents index page is accessible', function (): void {
+    login();
+    $event = Event::factory()->create();
+
+    $this->get('/events/' . $event->id . '/incidents')
+        ->assertStatus(200);
+});
+
+test('controller can create incident', function (): void {
     login();
     $event = Event::factory()->create();
 
@@ -23,7 +33,7 @@ test('controller can create incident', function () {
     ]);
 });
 
-test('incident show page displays details', function () {
+test('incident show page displays details', function (): void {
     login();
     $incident = Incident::factory()->create();
 
@@ -32,7 +42,7 @@ test('incident show page displays details', function () {
         ->assertSee($incident->reference);
 });
 
-test('controller can update incident status', function () {
+test('controller can update incident status', function (): void {
     login();
     $incident = Incident::factory()->create(['status' => 'new']);
 
@@ -46,7 +56,7 @@ test('controller can update incident status', function () {
     ]);
 });
 
-test('controller can assign resource to incident', function () {
+test('controller can assign resource to incident', function (): void {
     login();
     $event = Event::factory()->create();
     $incident = Incident::factory()->create(['event_id' => $event->id]);
@@ -62,7 +72,7 @@ test('controller can assign resource to incident', function () {
     ]);
 });
 
-test('controller can add note to incident', function () {
+test('controller can add note to incident', function (): void {
     login();
     $incident = Incident::factory()->create();
 
@@ -73,5 +83,75 @@ test('controller can add note to incident', function () {
     $this->assertDatabaseHas('incident_notes', [
         'incident_id' => $incident->id,
         'content' => 'Test note content',
+    ]);
+});
+
+test('controller can unassign resource from incident', function (): void {
+    login();
+    $event = Event::factory()->create();
+    $incident = Incident::factory()->create(['event_id' => $event->id]);
+    $resource = Resource::factory()->create(['event_id' => $event->id]);
+
+    $incident->resources()->attach($resource->id);
+
+    $this->post('/incidents/' . $incident->id . '/assign-resource', [
+        'resource_id' => $resource->id,
+    ])->assertSessionHas('success', 'Resource unassigned.');
+
+    $this->assertDatabaseMissing('incident_resource', [
+        'incident_id' => $incident->id,
+        'resource_id' => $resource->id,
+    ]);
+});
+
+test('updating incident to dispatched sets assigned resources status', function (): void {
+    login();
+    $event = Event::factory()->create();
+    $incident = Incident::factory()->create(['event_id' => $event->id, 'status' => 'new']);
+    $resource = Resource::factory()->create(['event_id' => $event->id, 'status' => 'available']);
+
+    $incident->resources()->attach($resource->id);
+
+    $this->post('/incidents/' . $incident->id . '/status', [
+        'status' => 'dispatched',
+    ])->assertSessionHas('success');
+
+    $this->assertDatabaseHas('resources', [
+        'id' => $resource->id,
+        'status' => 'assigned',
+    ]);
+});
+
+test('updating incident to complete sets assigned resources to available', function (): void {
+    login();
+    $event = Event::factory()->create();
+    $incident = Incident::factory()->create(['event_id' => $event->id, 'status' => 'dispatched']);
+    $resource = Resource::factory()->create(['event_id' => $event->id, 'status' => 'assigned']);
+
+    $incident->resources()->attach($resource->id);
+
+    $this->post('/incidents/' . $incident->id . '/status', [
+        'status' => 'complete',
+    ])->assertSessionHas('success');
+
+    $this->assertDatabaseHas('resources', [
+        'id' => $resource->id,
+        'status' => 'available',
+    ]);
+});
+
+test('assigning resource to new incident auto dispatches it', function (): void {
+    login();
+    $event = Event::factory()->create();
+    $incident = Incident::factory()->create(['event_id' => $event->id, 'status' => 'new']);
+    $resource = Resource::factory()->create(['event_id' => $event->id]);
+
+    $this->post('/incidents/' . $incident->id . '/assign-resource', [
+        'resource_id' => $resource->id,
+    ])->assertSessionHas('success', 'Resource assigned.');
+
+    $this->assertDatabaseHas('incidents', [
+        'id' => $incident->id,
+        'status' => 'dispatched',
     ]);
 });

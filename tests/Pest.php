@@ -1,5 +1,8 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase;
 
@@ -32,9 +35,7 @@ uses(
 |
 */
 
-expect()->extend('toBeOne', function () {
-    return $this->toBe(1);
-});
+expect()->extend('toBeOne', fn () => $this->toBe(1));
 
 /*
 
@@ -48,24 +49,24 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function login(\App\Models\User $user = null): \App\Models\User
+function login(?User $user = null): User
 {
-    $user ??= \App\Models\User::factory()->create();
+    $user ??= User::factory()->create();
     test()->actingAs($user);
     return $user;
 }
 
-function createAdmin(): \App\Models\User
+function createAdmin(): User
 {
-    return \App\Models\User::factory()->admin()->create();
+    return User::factory()->admin()->create();
 }
 
-function createController(): \App\Models\User
+function createController(): User
 {
-    return \App\Models\User::factory()->create();
+    return User::factory()->create();
 }
 
-function createReadOnly(): \App\Models\User
+function createReadOnly(): User
 {
-    return \App\Models\User::factory()->readOnly()->create();
+    return User::factory()->readOnly()->create();
 }

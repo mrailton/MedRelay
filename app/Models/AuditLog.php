@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -18,19 +20,6 @@ class AuditLog extends Model
         'user_agent',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'before' => 'array',
-            'after' => 'array',
-        ];
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
     public static function log(
         string $action,
         string $entityType,
@@ -48,5 +37,18 @@ class AuditLog extends Model
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'before' => 'array',
+            'after' => 'array',
+        ];
     }
 }

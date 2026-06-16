@@ -1,20 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Models\User;
 
-test('login page is accessible', function () {
+test('login page is accessible', function (): void {
     $response = $this->get('/login');
     $response->assertStatus(200);
 });
 
-test('authenticated users cannot access login page', function () {
+test('authenticated users cannot access login page', function (): void {
     login();
     $this->get('/login')->assertRedirect('/');
 });
 
-test('users can authenticate', function () {
+test('users can authenticate', function (): void {
     $user = User::factory()->create([
         'password' => 'password',
     ]);
@@ -27,7 +29,7 @@ test('users can authenticate', function () {
     $this->assertAuthenticated();
 });
 
-test('users cannot authenticate with invalid password', function () {
+test('users cannot authenticate with invalid password', function (): void {
     $user = User::factory()->create();
 
     $this->post('/login', [
@@ -38,7 +40,7 @@ test('users cannot authenticate with invalid password', function () {
     $this->assertGuest();
 });
 
-test('users can logout', function () {
+test('users can logout', function (): void {
     login();
     $this->post('/logout')->assertRedirect('/login');
     $this->assertGuest();

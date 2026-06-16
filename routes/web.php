@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -7,25 +9,26 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\StaffController;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/up', function () {
     try {
-        \Illuminate\Support\Facades\DB::select('SELECT 1');
+        DB::select('SELECT 1');
         return response()->json(['status' => 'ok', 'database' => 'ok']);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         return response()->json(['status' => 'degraded', 'database' => 'unavailable'], 503);
     }
 });
 
-Route::middleware('guest')->group(function () {
+Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'login'])->name('login');
     Route::post('/login', [AuthController::class, 'authenticate']);
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
 
     Route::get('/events', [EventController::class, 'index'])->name('events.index');
@@ -51,7 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
     Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
 
-    Route::middleware('role:admin')->group(function () {
+    Route::middleware('role:admin')->group(function (): void {
         Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
         Route::get('/admin/users/create', [AdminController::class, 'createUser'])->name('admin.users.create');
         Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.users.store');

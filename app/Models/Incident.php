@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\IncidentStatus;
@@ -25,11 +27,10 @@ class Incident extends Model
         'status',
     ];
 
-    protected function casts(): array
+    public static function generateReference(int $eventId): string
     {
-        return [
-            'status' => IncidentStatus::class,
-        ];
+        $count = static::where('event_id', $eventId)->count();
+        return $eventId . mb_str_pad((string) ($count + 1), 5, '0', STR_PAD_LEFT);
     }
 
     public function event(): BelongsTo
@@ -48,9 +49,10 @@ class Incident extends Model
         return $this->hasMany(IncidentNote::class);
     }
 
-    public static function generateReference(int $eventId): string
+    protected function casts(): array
     {
-        $count = static::where('event_id', $eventId)->count();
-        return $eventId . str_pad((string) ($count + 1), 5, '0', STR_PAD_LEFT);
+        return [
+            'status' => IncidentStatus::class,
+        ];
     }
 }

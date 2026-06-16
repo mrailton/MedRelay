@@ -13,6 +13,7 @@
     "require-dev": {
         "fakerphp/faker": "^1.23",
         "larastan/larastan": "^3.0",
+        "laravel/boost": "^2.4",
         "laravel/pail": "^1.2.5",
         "laravel/pint": "^1.27",
         "mockery/mockery": "^1.6",
@@ -47,7 +48,16 @@
         ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",
-            "@php artisan test"
+            "@php artisan test --coverage"
+        ],
+        "analyse": [
+            "@php vendor/bin/phpstan"
+        ],
+        "lint": [
+            "@php vendor/bin/pint --test"
+        ],
+        "format": [
+            "@php vendor/bin/pint"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

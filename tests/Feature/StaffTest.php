@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
-test('staff index page is accessible', function () {
+test('staff index page is accessible', function (): void {
     login();
     $this->get('/staff')->assertStatus(200);
 });
 
-test('controller can create staff', function () {
+test('controller can create staff', function (): void {
     login();
 
     $this->post('/staff', [

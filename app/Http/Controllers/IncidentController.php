@@ -1,38 +1,41 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Enums\IncidentStatus;
+use App\Http\Requests\AssignIncidentResourceRequest;
+use App\Http\Requests\StoreIncidentNoteRequest;
+use App\Http\Requests\StoreIncidentRequest;
+use App\Http\Requests\UpdateIncidentStatusRequest;
 use App\Models\AuditLog;
+use App\Models\Event;
 use App\Models\Incident;
 use App\Models\Resource;
-use Illuminate\Http\Request;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class IncidentController extends Controller
 {
-    public function index($eventId)
+    public function index(string $eventId): View
     {
-        $event = \App\Models\Event::findOrFail($eventId);
+        $event = Event::findOrFail($eventId);
         $incidents = $event->incidents()->orderBy('created_at', 'desc')->get();
         return view('incidents.index', compact('event', 'incidents'));
     }
 
-    public function show(Incident $incident)
+    public function show(Incident $incident): View
     {
         $incident->load(['event', 'resources.staff', 'notes.user']);
         return view('incidents.show', compact('incident'));
     }
 
-    public function store(Request $request, $eventId)
+    public function store(StoreIncidentRequest $request, string $eventId): RedirectResponse
     {
-        $event = \App\Models\Event::findOrFail($eventId);
+        $event = Event::findOrFail($eventId);
 
-        $data = $request->validate([
-            'location' => 'required|string|max:255',
-            'priority' => 'required|in:P1,P2,P3',
-            'category' => 'required|string|max:50',
-            'description' => 'required|string',
-        ]);
+        $data = $request->validated();
 
         $data['event_id'] = $event->id;
         $data['reference'] = Incident::generateReference($event->id);
@@ -46,20 +49,18 @@ class IncidentController extends Controller
             ->with('success', 'Incident created successfully.');
     }
 
-    public function updateStatus(Request $request, Incident $incident)
+    public function updateStatus(UpdateIncidentStatusRequest $request, Incident $incident): RedirectResponse
     {
-        $data = $request->validate([
-            'status' => 'required|in:new,dispatched,en_route,on_scene,transporting,complete,cancelled',
-        ]);
+        $data = $request->validated();
 
         $before = $incident->toArray();
         $incident->update($data);
 
         if ($incident->wasChanged('status')) {
-            $incident->resources()->each(function ($resource) use ($incident) {
-                if ($incident->status === 'dispatched' || $incident->status === 'en_route') {
+            $incident->resources()->each(function ($resource) use ($incident): void {
+                if (IncidentStatus::Dispatched === $incident->status || IncidentStatus::EnRoute === $incident->status) {
                     $resource->update(['status' => 'assigned']);
-                } elseif (in_array($incident->status, ['complete', 'cancelled'])) {
+                } elseif (IncidentStatus::Complete === $incident->status || IncidentStatus::Cancelled === $incident->status) {
                     $resource->update(['status' => 'available']);
                 }
             });
@@ -77,13 +78,11 @@ class IncidentController extends Controller
             ->with('success', 'Incident status updated.');
     }
 
-    public function assignResource(Request $request, Incident $incident)
+    public function assignResource(AssignIncidentResourceRequest $request, Incident $incident): RedirectResponse
     {
-        $request->validate([
-            'resource_id' => 'required|exists:resources,id',
-        ]);
+        $data = $request->validated();
 
-        $resource = Resource::findOrFail($request->resource_id);
+        $resource = Resource::findOrFail($data['resource_id']);
 
         if ($incident->resources()->where('resource_id', $resource->id)->exists()) {
             $incident->resources()->detach($resource->id);
@@ -93,7 +92,7 @@ class IncidentController extends Controller
             $incident->resources()->attach($resource->id);
             $resource->update(['status' => 'assigned']);
 
-            if ($incident->status === IncidentStatus::New) {
+            if (IncidentStatus::New === $incident->status) {
                 $incident->update(['status' => 'dispatched']);
             }
 
@@ -106,11 +105,9 @@ class IncidentController extends Controller
             ->with('success', $message);
     }
 
-    public function storeNote(Request $request, Incident $incident)
+    public function storeNote(StoreIncidentNoteRequest $request, Incident $incident): RedirectResponse
     {
-        $data = $request->validate([
-            'content' => 'required|string',
-        ]);
+        $data = $request->validated();
 
         $incident->notes()->create([
             'content' => $data['content'],

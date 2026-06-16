@@ -1,14 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\Staff;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): Response|View
     {
         $activeEvents = Event::where('is_active', true)
             ->orWhere('end_time', '>=', now())

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\ClinicalLevel;
@@ -20,13 +22,6 @@ class Staff extends Model
         'notes',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'clinical_level' => ClinicalLevel::class,
-        ];
-    }
-
     public function getFullNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";
@@ -36,5 +31,12 @@ class Staff extends Model
     {
         return $this->belongsToMany(Resource::class, 'resource_staff')
             ->withTimestamps();
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'clinical_level' => ClinicalLevel::class,
+        ];
     }
 }

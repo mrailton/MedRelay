@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Database\Factories\EventFactory;
@@ -21,15 +23,6 @@ class Event extends Model
         'notes',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'start_time' => 'datetime',
-            'end_time' => 'datetime',
-            'is_active' => 'boolean',
-        ];
-    }
-
     public function resources(): HasMany
     {
         return $this->hasMany(Resource::class);
@@ -38,5 +31,14 @@ class Event extends Model
     public function incidents(): HasMany
     {
         return $this->hasMany(Incident::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'start_time' => 'datetime',
+            'end_time' => 'datetime',
+            'is_active' => 'boolean',
+        ];
     }
 }

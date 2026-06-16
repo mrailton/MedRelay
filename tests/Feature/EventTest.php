@@ -1,16 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Models\Event;
+use App\Models\User;
 
-test('events index page is accessible', function () {
+test('events index page is accessible', function (): void {
     login();
     $this->get('/events')->assertStatus(200);
 });
 
-test('controller can create event', function () {
-    $user = \App\Models\User::factory()->create();
+test('controller can create event', function (): void {
+    $user = User::factory()->create();
 
     login($user);
 
@@ -27,7 +30,7 @@ test('controller can create event', function () {
     ]);
 });
 
-test('event show page displays details', function () {
+test('event show page displays details', function (): void {
     login();
     $event = Event::factory()->create();
 
@@ -36,7 +39,16 @@ test('event show page displays details', function () {
         ->assertSee($event->name);
 });
 
-test('controller can update event', function () {
+test('event edit page is accessible', function (): void {
+    login();
+    $event = Event::factory()->create();
+
+    $this->get('/events/' . $event->id . '/edit')
+        ->assertStatus(200)
+        ->assertSee($event->name);
+});
+
+test('controller can update event', function (): void {
     login();
     $event = Event::factory()->create();
 
