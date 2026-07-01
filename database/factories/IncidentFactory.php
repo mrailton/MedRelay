@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\IncidentLifecycleStatus;
 use App\Models\Event;
 use App\Models\Incident;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,7 +20,7 @@ class IncidentFactory extends Factory
             'priority' => fake()->randomElement(['P1', 'P2', 'P3']),
             'category' => fake()->randomElement(['medical', 'trauma', 'other']),
             'description' => fake()->paragraph(),
-            'status' => 'new',
+            'status' => IncidentLifecycleStatus::Open->value,
         ];
     }
 }

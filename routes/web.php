@@ -41,6 +41,8 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/events/{event}/incidents', [IncidentController::class, 'store'])->name('events.incidents.store');
     Route::get('/incidents/{incident}', [IncidentController::class, 'show'])->name('incidents.show');
     Route::post('/incidents/{incident}/status', [IncidentController::class, 'updateStatus'])->name('incidents.update-status');
+    Route::post('/incidents/{incident}/resources/{resource}/status', [IncidentController::class, 'updateResourceStatus'])
+        ->name('incidents.resources.update-status');
     Route::post('/incidents/{incident}/assign-resource', [IncidentController::class, 'assignResource'])->name('incidents.assign-resource');
     Route::post('/incidents/{incident}/notes', [IncidentController::class, 'storeNote'])->name('incidents.notes.store');
 

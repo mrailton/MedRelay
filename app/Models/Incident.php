@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\IncidentStatus;
+use App\Enums\IncidentLifecycleStatus;
+use App\Enums\IncidentReportSource;
 use Database\Factories\IncidentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +26,7 @@ class Incident extends Model
         'category',
         'description',
         'status',
+        'source',
     ];
 
     public static function generateReference(int $eventId): string
@@ -41,6 +43,7 @@ class Incident extends Model
     public function resources(): BelongsToMany
     {
         return $this->belongsToMany(Resource::class, 'incident_resource')
+            ->withPivot('status')
             ->withTimestamps();
     }
 
@@ -52,7 +55,8 @@ class Incident extends Model
     protected function casts(): array
     {
         return [
-            'status' => IncidentStatus::class,
+            'status' => IncidentLifecycleStatus::class,
+            'source' => IncidentReportSource::class,
         ];
     }
 }

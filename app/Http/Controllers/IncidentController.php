@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\IncidentLifecycleStatus;
 use App\Enums\IncidentStatus;
 use App\Http\Requests\AssignIncidentResourceRequest;
 use App\Http\Requests\StoreIncidentNoteRequest;
 use App\Http\Requests\StoreIncidentRequest;
+use App\Http\Requests\UpdateIncidentResourceStatusRequest;
 use App\Http\Requests\UpdateIncidentStatusRequest;
 use App\Models\AuditLog;
 use App\Models\Event;
@@ -27,7 +29,7 @@ class IncidentController extends Controller
 
     public function show(Incident $incident): View
     {
-        $incident->load(['event', 'resources.staff', 'notes.user']);
+        $incident->load(['event.resources', 'resources.staff', 'notes.user']);
         return view('incidents.show', compact('incident'));
     }
 
@@ -39,7 +41,7 @@ class IncidentController extends Controller
 
         $data['event_id'] = $event->id;
         $data['reference'] = Incident::generateReference($event->id);
-        $data['status'] = 'new';
+        $data['status'] = IncidentLifecycleStatus::Open->value;
 
         $incident = Incident::create($data);
 
@@ -54,16 +56,26 @@ class IncidentController extends Controller
         $data = $request->validated();
 
         $before = $incident->toArray();
-        $incident->update($data);
+
+        $incident->update(['status' => $data['status']]);
 
         if ($incident->wasChanged('status')) {
-            $incident->resources()->each(function ($resource) use ($incident): void {
-                if (IncidentStatus::Dispatched === $incident->status || IncidentStatus::EnRoute === $incident->status) {
-                    $resource->update(['status' => 'assigned']);
-                } elseif (IncidentStatus::Complete === $incident->status || IncidentStatus::Cancelled === $incident->status) {
-                    $resource->update(['status' => 'available']);
-                }
-            });
+            if (
+                IncidentLifecycleStatus::Closed->value === $data['status']
+                && filled($data['close_notes'] ?? null)
+            ) {
+                $incident->notes()->create([
+                    'content' => 'Incident closed: ' . mb_trim($data['close_notes']),
+                    'user_id' => auth()->id(),
+                ]);
+            }
+
+            if (IncidentLifecycleStatus::Open->value === $data['status']) {
+                $incident->notes()->create([
+                    'content' => 'Incident reopened: ' . mb_trim($data['reopen_notes']),
+                    'user_id' => auth()->id(),
+                ]);
+            }
 
             AuditLog::log(
                 'incident.updated',
@@ -75,7 +87,10 @@ class IncidentController extends Controller
         }
 
         return redirect()->route('incidents.show', $incident)
-            ->with('success', 'Incident status updated.');
+            ->with(
+                'success',
+                IncidentLifecycleStatus::Closed->value === $data['status'] ? 'Incident closed.' : 'Incident reopened.'
+            );
     }
 
     public function assignResource(AssignIncidentResourceRequest $request, Incident $incident): RedirectResponse
@@ -89,12 +104,8 @@ class IncidentController extends Controller
             $resource->update(['status' => 'available']);
             $message = 'Resource unassigned.';
         } else {
-            $incident->resources()->attach($resource->id);
+            $incident->resources()->attach($resource->id, ['status' => IncidentStatus::Dispatched->value]);
             $resource->update(['status' => 'assigned']);
-
-            if (IncidentStatus::New === $incident->status) {
-                $incident->update(['status' => 'dispatched']);
-            }
 
             $message = 'Resource assigned.';
         }
@@ -103,6 +114,25 @@ class IncidentController extends Controller
 
         return redirect()->route('incidents.show', $incident)
             ->with('success', $message);
+    }
+
+    public function updateResourceStatus(
+        UpdateIncidentResourceStatusRequest $request,
+        Incident $incident,
+        Resource $resource
+    ): RedirectResponse {
+        if ( ! $incident->resources()->whereKey($resource->id)->exists()) {
+            abort(404);
+        }
+
+        $incident->resources()->updateExistingPivot($resource->id, [
+            'status' => $request->validated()['status'],
+        ]);
+
+        AuditLog::log('incident.resource-status-updated', 'incident', (string) $incident->id);
+
+        return redirect()->route('incidents.show', $incident)
+            ->with('success', 'Resource incident status updated.');
     }
 
     public function storeNote(StoreIncidentNoteRequest $request, Incident $incident): RedirectResponse

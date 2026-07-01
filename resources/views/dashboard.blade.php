@@ -38,7 +38,9 @@
     @if ($selectedEvent)
         @php
             $totalIncidents = $incidents->count();
-            $activeIncidents = $incidents->whereNotIn('status', ['complete', 'cancelled'])->count();
+            $activeIncidents = $incidents
+                ->filter(fn ($incident) => $incident->status === \App\Enums\IncidentLifecycleStatus::Open)
+                ->count();
             $availableResources = $resources->where('status', 'available')->count();
             $deployedResources = $resources->whereIn('status', ['assigned', 'en_route', 'on_scene', 'transporting'])->count();
             $outOfServiceResources = $resources->where('status', 'out_of_service')->count();

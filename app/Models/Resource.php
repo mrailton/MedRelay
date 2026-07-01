@@ -42,6 +42,7 @@ class Resource extends Model
     public function incidents(): BelongsToMany
     {
         return $this->belongsToMany(Incident::class, 'incident_resource')
+            ->withPivot('status')
             ->withTimestamps();
     }
 

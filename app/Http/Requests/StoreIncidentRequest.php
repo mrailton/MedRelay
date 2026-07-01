@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\IncidentReportSource;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreIncidentRequest extends FormRequest
 {
@@ -19,6 +21,7 @@ class StoreIncidentRequest extends FormRequest
             'location' => ['required', 'string', 'max:255'],
             'priority' => ['required', 'in:P1,P2,P3'],
             'category' => ['required', 'string', 'max:50'],
+            'source' => ['required', Rule::enum(IncidentReportSource::class)],
             'description' => ['required', 'string'],
         ];
     }

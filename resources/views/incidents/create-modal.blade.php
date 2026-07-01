@@ -35,6 +35,15 @@
                 </div>
 
                 <div class="form-control">
+                    <label class="mr-form-label"><span class="label-text">Source</span></label>
+                    <select name="category" class="mr-select w-full" required>
+                        @foreach(\App\Enums\IncidentReportSource::cases() as $source)
+                            <option value="{{ $source->value }}">{{ $source->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-control">
                     <label class="mr-form-label"><span class="label-text">Description</span></label>
                     <textarea name="description" class="mr-textarea w-full" rows="3" placeholder="Describe the incident..." required></textarea>
                 </div>

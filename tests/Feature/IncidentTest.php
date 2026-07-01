@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Enums\IncidentReportSource;
 use App\Models\Event;
 use App\Models\Incident;
 use App\Models\Resource;
@@ -25,6 +26,7 @@ test('controller can create incident', function (): void {
         'priority' => 'P1',
         'category' => 'medical',
         'description' => 'Test incident description',
+        'source' => IncidentReportSource::OTHER->value,
     ])->assertSessionHas('success');
 
     $this->assertDatabaseHas('incidents', [
@@ -44,15 +46,45 @@ test('incident show page displays details', function (): void {
 
 test('controller can update incident status', function (): void {
     login();
-    $incident = Incident::factory()->create(['status' => 'new']);
+    $incident = Incident::factory()->create(['status' => 'open']);
 
     $this->post('/incidents/' . $incident->id . '/status', [
-        'status' => 'dispatched',
+        'status' => 'closed',
+        'close_notes' => 'Incident wrapped up successfully',
     ])->assertSessionHas('success');
 
     $this->assertDatabaseHas('incidents', [
         'id' => $incident->id,
-        'status' => 'dispatched',
+        'status' => 'closed',
+    ]);
+
+    $this->assertDatabaseHas('incident_notes', [
+        'incident_id' => $incident->id,
+        'content' => 'Incident closed: Incident wrapped up successfully',
+    ]);
+});
+
+test('reopening incident requires note and stores it', function (): void {
+    login();
+    $incident = Incident::factory()->create(['status' => 'closed']);
+
+    $this->post('/incidents/' . $incident->id . '/status', [
+        'status' => 'open',
+    ])->assertSessionHasErrors('reopen_notes');
+
+    $this->post('/incidents/' . $incident->id . '/status', [
+        'status' => 'open',
+        'reopen_notes' => 'Initial triage details were incorrect',
+    ])->assertSessionHas('success');
+
+    $this->assertDatabaseHas('incidents', [
+        'id' => $incident->id,
+        'status' => 'open',
+    ]);
+
+    $this->assertDatabaseHas('incident_notes', [
+        'incident_id' => $incident->id,
+        'content' => 'Incident reopened: Initial triage details were incorrect',
     ]);
 });
 
@@ -69,6 +101,7 @@ test('controller can assign resource to incident', function (): void {
     $this->assertDatabaseHas('incident_resource', [
         'incident_id' => $incident->id,
         'resource_id' => $resource->id,
+        'status' => 'dispatched',
     ]);
 });
 
@@ -104,54 +137,21 @@ test('controller can unassign resource from incident', function (): void {
     ]);
 });
 
-test('updating incident to dispatched sets assigned resources status', function (): void {
+test('controller can update resource status on incident', function (): void {
     login();
     $event = Event::factory()->create();
-    $incident = Incident::factory()->create(['event_id' => $event->id, 'status' => 'new']);
+    $incident = Incident::factory()->create(['event_id' => $event->id, 'status' => 'open']);
     $resource = Resource::factory()->create(['event_id' => $event->id, 'status' => 'available']);
 
-    $incident->resources()->attach($resource->id);
+    $incident->resources()->attach($resource->id, ['status' => 'new']);
 
-    $this->post('/incidents/' . $incident->id . '/status', [
-        'status' => 'dispatched',
+    $this->post('/incidents/' . $incident->id . '/resources/' . $resource->id . '/status', [
+        'status' => 'on_scene',
     ])->assertSessionHas('success');
 
-    $this->assertDatabaseHas('resources', [
-        'id' => $resource->id,
-        'status' => 'assigned',
-    ]);
-});
-
-test('updating incident to complete sets assigned resources to available', function (): void {
-    login();
-    $event = Event::factory()->create();
-    $incident = Incident::factory()->create(['event_id' => $event->id, 'status' => 'dispatched']);
-    $resource = Resource::factory()->create(['event_id' => $event->id, 'status' => 'assigned']);
-
-    $incident->resources()->attach($resource->id);
-
-    $this->post('/incidents/' . $incident->id . '/status', [
-        'status' => 'complete',
-    ])->assertSessionHas('success');
-
-    $this->assertDatabaseHas('resources', [
-        'id' => $resource->id,
-        'status' => 'available',
-    ]);
-});
-
-test('assigning resource to new incident auto dispatches it', function (): void {
-    login();
-    $event = Event::factory()->create();
-    $incident = Incident::factory()->create(['event_id' => $event->id, 'status' => 'new']);
-    $resource = Resource::factory()->create(['event_id' => $event->id]);
-
-    $this->post('/incidents/' . $incident->id . '/assign-resource', [
+    $this->assertDatabaseHas('incident_resource', [
+        'incident_id' => $incident->id,
         'resource_id' => $resource->id,
-    ])->assertSessionHas('success', 'Resource assigned.');
-
-    $this->assertDatabaseHas('incidents', [
-        'id' => $incident->id,
-        'status' => 'dispatched',
+        'status' => 'on_scene',
     ]);
 });

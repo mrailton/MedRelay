@@ -1,5 +1,7 @@
 @php
 $badgeClass = match($status) {
+    'open' => 'badge-soft badge-warning',
+    'closed' => 'badge-soft badge-success',
     'new', 'available' => 'badge-soft badge-success',
     'dispatched', 'assigned' => 'badge-soft badge-info',
     'en_route' => 'badge-soft badge-warning',

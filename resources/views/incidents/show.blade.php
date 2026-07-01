@@ -50,6 +50,10 @@
                             <div class="mr-detail-value">{{ $incident->location }}</div>
                         </div>
                         <div class="mr-detail-item">
+                            <div class="mr-detail-label">Source</div>
+                            <div class="mr-detail-value">{{ $incident->source->label() }}</div>
+                        </div>
+                        <div class="mr-detail-item">
                             <div class="mr-detail-label">Description</div>
                             <p class="text-sm whitespace-pre-wrap mt-1">{{ $incident->description }}</p>
                         </div>
@@ -66,21 +70,98 @@
                     <div class="card-body">
                         <h2 class="mr-card-title mb-3">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            Update Status
+                            Incident Status
                         </h2>
-                        <form method="POST" action="{{ route('incidents.update-status', $incident) }}" class="flex gap-2">
-                            @csrf
-                            <select name="status" class="mr-select flex-1">
-                                @foreach (\App\Enums\IncidentStatus::cases() as $status)
-                                    <option value="{{ $status->value }}" @selected($incident->status === $status)>
-                                        {{ $status->label() }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <button type="submit" class="btn btn-primary btn-sm">Update</button>
-                        </form>
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="text-sm text-base-content/70">Current: {{ $incident->status->label() }}</div>
+                            @if ($incident->status === \App\Enums\IncidentLifecycleStatus::Open)
+                                <button
+                                    type="button"
+                                    class="btn btn-primary btn-sm"
+                                    onclick="document.getElementById('close-incident-modal').showModal()"
+                                >
+                                    Close Incident
+                                </button>
+                            @else
+                                <button
+                                    type="button"
+                                    class="btn btn-outline btn-sm"
+                                    onclick="document.getElementById('reopen-incident-modal').showModal()"
+                                >
+                                    Reopen Incident
+                                </button>
+                            @endif
+                        </div>
                     </div>
                 </div>
+            @endif
+
+            @if (auth()->user()->isControllerOrAdmin() && $incident->status === \App\Enums\IncidentLifecycleStatus::Open)
+                <dialog id="close-incident-modal" class="modal modal-bottom sm:modal-middle">
+                    <div class="modal-box mr-modal-box max-w-lg">
+                        <form method="POST" action="{{ route('incidents.update-status', $incident) }}">
+                            @csrf
+                            <input type="hidden" name="status" value="{{ \App\Enums\IncidentLifecycleStatus::Closed->value }}" />
+
+                            <div class="mr-modal-header">
+                                <h3>Close Incident</h3>
+                                <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="document.getElementById('close-incident-modal').close()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+
+                            <div class="mr-modal-body space-y-4">
+                                <p class="text-sm text-base-content/70">Add optional closure notes for this incident.</p>
+                                <div class="form-control">
+                                    <label class="mr-form-label"><span class="label-text">Closure Notes (Optional)</span></label>
+                                    <textarea name="close_notes" class="mr-textarea w-full" rows="4" placeholder="Add closure notes..."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="mr-modal-footer">
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('close-incident-modal').close()">Cancel</button>
+                                <button type="submit" class="btn btn-primary btn-sm">Close Incident</button>
+                            </div>
+                        </form>
+                    </div>
+                    <form method="dialog" class="modal-backdrop">
+                        <button>close</button>
+                    </form>
+                </dialog>
+            @endif
+
+            @if (auth()->user()->isControllerOrAdmin() && $incident->status === \App\Enums\IncidentLifecycleStatus::Closed)
+                <dialog id="reopen-incident-modal" class="modal modal-bottom sm:modal-middle">
+                    <div class="modal-box mr-modal-box max-w-lg">
+                        <form method="POST" action="{{ route('incidents.update-status', $incident) }}">
+                            @csrf
+                            <input type="hidden" name="status" value="{{ \App\Enums\IncidentLifecycleStatus::Open->value }}" />
+
+                            <div class="mr-modal-header">
+                                <h3>Reopen Incident</h3>
+                                <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="document.getElementById('reopen-incident-modal').close()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+
+                            <div class="mr-modal-body space-y-4">
+                                <p class="text-sm text-base-content/70">Add a note explaining why this incident is being reopened.</p>
+                                <div class="form-control">
+                                    <label class="mr-form-label"><span class="label-text">Reopen Notes</span></label>
+                                    <textarea name="reopen_notes" class="mr-textarea w-full" rows="4" placeholder="Why is this incident being reopened?" required></textarea>
+                                </div>
+                            </div>
+
+                            <div class="mr-modal-footer">
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('reopen-incident-modal').close()">Cancel</button>
+                                <button type="submit" class="btn btn-primary btn-sm">Reopen Incident</button>
+                            </div>
+                        </form>
+                    </div>
+                    <form method="dialog" class="modal-backdrop">
+                        <button>close</button>
+                    </form>
+                </dialog>
             @endif
         </div>
 
@@ -101,7 +182,8 @@
                                 <tr>
                                     <th>Name</th>
                                     <th>Type</th>
-                                    <th>Status</th>
+                                    <th>Resource Status</th>
+                                    <th>Incident Status</th>
                                     <th class="text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -111,8 +193,22 @@
                                         <td class="font-medium">{{ $resource->name }}</td>
                                         <td><span class="text-sm">{{ $resource->resource_type->label() }}</span></td>
                                         <td>@include('shared.status-badge', ['status' => $resource->status->value])</td>
+                                        <td>
+                                            @include('shared.status-badge', ['status' => $resource->pivot->status])
+                                        </td>
                                         <td class="text-right">
                                             @if (auth()->user()->isControllerOrAdmin())
+                                                <form method="POST" action="{{ route('incidents.resources.update-status', [$incident, $resource]) }}" class="inline-flex items-center gap-2 mr-2">
+                                                    @csrf
+                                                    <select name="status" class="mr-select select-xs w-36">
+                                                        @foreach (\App\Enums\IncidentStatus::cases() as $status)
+                                                            <option value="{{ $status->value }}" @selected($resource->pivot->status === $status->value)>
+                                                                {{ $status->label() }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <button type="submit" class="btn btn-ghost btn-xs">Set</button>
+                                                </form>
                                                 <form method="POST" action="{{ route('incidents.assign-resource', $incident) }}" class="inline">
                                                     @csrf
                                                     <input type="hidden" name="resource_id" value="{{ $resource->id }}" />
@@ -123,7 +219,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4">
+                                        <td colspan="5">
                                             <div class="mr-empty-state py-6">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                                                 <p>No resources assigned.</p>
