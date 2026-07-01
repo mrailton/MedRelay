@@ -1,7 +1,8 @@
 {
     "agents": [
-        "junie",
-        "opencode"
+        "opencode",
+        "copilot",
+        "junie"
     ],
     "cloud": false,
     "guidelines": true,

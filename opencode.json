@@ -7,7 +7,7 @@
             "command": [
                 "wsl.exe",
                 "/usr/bin/php8.5",
-                "/home/mark/Projects/MedRelay/artisan",
+                "/home/mark/Projects/MedRelay-Laravel/artisan",
                 "boost:mcp"
             ]
         }
