@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\ClinicalLevel;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class StaffFactory extends Factory
@@ -11,10 +12,9 @@ class StaffFactory extends Factory
     public function definition(): array
     {
         return [
-            'first_name' => fake()->firstName(),
-            'last_name' => fake()->lastName(),
-            'clinical_level' => fake()->randomElement(['far', 'efr', 'emt', 'paramedic', 'advanced_paramedic']),
-            'notes' => fake()->optional()->sentence(),
+            'first_name' => $this->faker->firstName(),
+            'last_name' => $this->faker->lastName(),
+            'clinical_level' => $this->faker->randomElement(ClinicalLevel::class),
         ];
     }
 }

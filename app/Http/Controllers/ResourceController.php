@@ -47,7 +47,7 @@ class ResourceController extends Controller
 
         AuditLog::log('resource.created', 'resource', (string) $resource->id, after: $resource->toArray());
 
-        return redirect()->route('resources.show', $resource)
+        return redirect()->route('dashboard', $resource)
             ->with('success', 'Resource created.');
     }
 
