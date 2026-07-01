@@ -9,19 +9,21 @@ use App\Enums\ClinicalLevel;
 test('label returns correct display name for each case', function (ClinicalLevel $case, string $expected): void {
     expect($case->label())->toBe($expected);
 })->with([
-    [ClinicalLevel::FAR, 'FAR'],
     [ClinicalLevel::EFR, 'EFR'],
     [ClinicalLevel::EMT, 'EMT'],
     [ClinicalLevel::Paramedic, 'Paramedic'],
     [ClinicalLevel::AdvancedParamedic, 'Advanced Paramedic'],
+    [ClinicalLevel::Nurse, 'Nurse'],
+    [ClinicalLevel::Doctor, 'Doctor'],
 ]);
 
 test('rank returns correct numeric value for each case', function (ClinicalLevel $case, int $expected): void {
     expect($case->rank())->toBe($expected);
 })->with([
-    [ClinicalLevel::FAR, 1],
-    [ClinicalLevel::EFR, 2],
-    [ClinicalLevel::EMT, 3],
-    [ClinicalLevel::Paramedic, 4],
-    [ClinicalLevel::AdvancedParamedic, 5],
+    [ClinicalLevel::EFR, 1],
+    [ClinicalLevel::EMT, 2],
+    [ClinicalLevel::Paramedic, 3],
+    [ClinicalLevel::AdvancedParamedic, 4],
+    [ClinicalLevel::Nurse, 5],
+    [ClinicalLevel::Doctor, 6],
 ]);
